@@ -5,18 +5,39 @@ sealed trait Field {                      // 'sealed' traits can only be extende
   def isOccupied: Boolean = peg != None
 }
 
-case class NormalField(index: Int) extends Field {
+case class NormalField() extends Field {
+  override var peg: Option[Peg] = None
+  override def toString = {
+    if (peg == None) {
+      "o"
+    } else {
+      peg.get.color.toString
+    }
+  }
+}
+
+case class StartField(color: Color.Value) extends Field {
+  override var peg: Option[Peg] = None
+  override def toString = {
+    if (peg == None) {
+      "s"
+    } else {
+      peg.get.color.toString
+    }
+  }
+}
+
+case class OutField(color: Color.Value) extends Field {
   override var peg: Option[Peg] = None
 }
 
-case class StartField(index: Int, color: Color.Value) extends Field {
+case class HomeFields(color: Color.Value) extends Field {
   override var peg: Option[Peg] = None
-}
-
-case class OutField(index: Int, color: Color.Value) extends Field {
-  override var peg: Option[Peg] = None
-}
-
-case class HomeFields(index: Int, color: Color.Value) extends Field {
-  override var peg: Option[Peg] = None
+  override def toString = {
+    if (peg == None) {
+      "h"
+    } else {
+      "x"
+    }
+  }
 }

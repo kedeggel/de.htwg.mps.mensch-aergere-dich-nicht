@@ -4,7 +4,7 @@ import org.scalatest.{Matchers, WordSpec}
 
 class FieldsSpec extends WordSpec with Matchers {
   "A field" should {
-    val field = NormalField(0)
+    val field = NormalField()
     "be not occupied without a peg on it" in {
       field.isOccupied should be(false)
     }

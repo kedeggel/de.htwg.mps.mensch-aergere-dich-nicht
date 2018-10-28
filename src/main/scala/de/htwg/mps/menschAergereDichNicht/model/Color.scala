@@ -1,5 +1,9 @@
 package de.htwg.mps.menschAergereDichNicht.model
 
 object Color extends Enumeration {
-  val yellow, red, green, blue = Value
+  type Color =  Value
+  val yellow =  Value("a")
+  val blue =    Value("b")
+  val green =   Value("c")
+  val red =     Value("d")
 }
