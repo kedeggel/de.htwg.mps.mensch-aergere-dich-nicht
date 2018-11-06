@@ -1,6 +1,6 @@
-package de.htwg.mps.menschAergereDichNicht
+package de.htwg.mps.menschAergereDichNicht.view
 
-import de.htwg.mps.menschAergereDichNicht.model._
+import de.htwg.mps.menschAergereDichNicht.model.{Color, HomeField, NormalField, StartField}
 
 object Tui {
   def render(): Unit = {
@@ -8,10 +8,10 @@ object Tui {
     var b_out = 4
     var c_out = 4
     var d_out = 4
-    var a_home = Array(HomeFields(Color.yellow), HomeFields(Color.yellow), HomeFields(Color.yellow), HomeFields(Color.yellow))
-    var b_home = Array(HomeFields(Color.blue), HomeFields(Color.blue), HomeFields(Color.blue), HomeFields(Color.blue))
-    var c_home = Array(HomeFields(Color.green), HomeFields(Color.green), HomeFields(Color.green), HomeFields(Color.green))
-    var d_home = Array(HomeFields(Color.red), HomeFields(Color.red), HomeFields(Color.red), HomeFields(Color.red))
+    var a_home = Array(HomeField(Color.yellow), HomeField(Color.yellow), HomeField(Color.yellow), HomeField(Color.yellow))
+    var b_home = Array(HomeField(Color.blue), HomeField(Color.blue), HomeField(Color.blue), HomeField(Color.blue))
+    var c_home = Array(HomeField(Color.green), HomeField(Color.green), HomeField(Color.green), HomeField(Color.green))
+    var d_home = Array(HomeField(Color.red), HomeField(Color.red), HomeField(Color.red), HomeField(Color.red))
 
     val field = Array(
       StartField(Color.yellow), NormalField(), NormalField(), NormalField(), NormalField(),
