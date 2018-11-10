@@ -25,7 +25,7 @@ case class StartField(color: Color.Value) extends Field {
 }
 
 case class OutField(color: Color.Value) extends Field {
-  override val emptyFieldString: String = color.toString
+  override val emptyFieldString: String = "o"
   override var peg: Option[Peg] = None
 }
 

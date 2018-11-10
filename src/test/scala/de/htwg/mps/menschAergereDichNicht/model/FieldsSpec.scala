@@ -22,7 +22,7 @@ class FieldsSpec extends WordSpec with Matchers {
     }
     "be represented with peg\'s color if occupied" in {
       field.peg = Some(Peg(Color.yellow, field))
-      field.toString should be("a")
+      field.toString should be(Color.yellow.toString)
     }
   }
 
@@ -39,8 +39,8 @@ class FieldsSpec extends WordSpec with Matchers {
 
   "An out field" should {
     val field = OutField(Color.yellow)
-    "be represented with peg\'s color if empty" in {
-      field.toString should be(Color.yellow.toString)
+    "be represented with \"o\" if empty" in {
+      field.toString should be("o")
     }
     "be represented with peg\'s color if occupied" in {
       field.peg = Some(Peg(Color.yellow, field))
