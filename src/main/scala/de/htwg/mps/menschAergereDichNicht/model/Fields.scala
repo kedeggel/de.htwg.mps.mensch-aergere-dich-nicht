@@ -2,42 +2,36 @@ package de.htwg.mps.menschAergereDichNicht.model
 
 sealed trait Field { // 'sealed' traits can only be extended in same file
   val emptyFieldString: String
-  var peg: Option[Peg]
+  val id: Int
 
-  def isOccupied: Boolean = peg.isDefined
-
-  override def toString: String = {
+  def toString(peg: Option[Peg]) : String = {
     peg match {
-      case Some(p) => p.color.toString
+      case Some(peg) => peg.color.toString
       case None    => emptyFieldString
     }
   }
 }
 
-case class NormalField() extends Field {
+case class NormalField(id: Int) extends Field {
   override val emptyFieldString: String = "o"
-  override var peg: Option[Peg] = None
 }
 
-case class StartField(color: Color.Value) extends Field {
+case class StartField(id: Int, color: Color.Value) extends Field {
   override val emptyFieldString: String = "s"
-  override var peg: Option[Peg] = None
 }
 
-case class OutField(color: Color.Value) extends Field {
+case class OutField(id: Int, color: Color.Value) extends Field {
   override val emptyFieldString: String = "o"
-  override var peg: Option[Peg] = None
 }
 
-case class HomeField(color: Color.Value) extends Field {
+case class HomeField(id: Int, color: Color.Value) extends Field {
   override val emptyFieldString: String = "h"
-  override var peg: Option[Peg] = None
 
-  override def toString: String = {
+  override def toString(peg: Option[Peg]) : String = {
     if (peg.nonEmpty) {
       "x"
     } else {
-      super.toString
+      emptyFieldString
     }
   }
 }
