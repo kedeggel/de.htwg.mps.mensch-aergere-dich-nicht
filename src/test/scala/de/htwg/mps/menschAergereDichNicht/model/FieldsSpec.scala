@@ -22,7 +22,7 @@ class FieldsSpec extends WordSpec with Matchers {
       field.toString(peg) should be("o")
     }
     "be represented with peg\'s color if occupied" in {
-      val peg = Some(Peg(Color.Yellow))
+      val peg = Some(Peg(Color.Yellow, None))
       field.toString(peg) should be(Color.Yellow.toString)
     }
   }
@@ -34,7 +34,7 @@ class FieldsSpec extends WordSpec with Matchers {
       field.toString(peg) should be("s")
     }
     "be represented with peg\'s color if occupied" in {
-      val peg = Some(Peg(Color.Yellow))
+      val peg = Some(Peg(Color.Yellow, None))
       field.toString(peg) should be(Color.Yellow.toString)
     }
   }
@@ -46,7 +46,7 @@ class FieldsSpec extends WordSpec with Matchers {
       field.toString(peg) should be("o")
     }
     "be represented with peg\'s color if occupied" in {
-      val peg = Some(Peg(Color.Yellow))
+      val peg = Some(Peg(Color.Yellow, None))
       field.toString(peg) should be(Color.Yellow.toString)
     }
   }
@@ -58,7 +58,7 @@ class FieldsSpec extends WordSpec with Matchers {
       field.toString(peg) should be("h")
     }
     "be represented with peg\'s color if occupied" in {
-      val peg = Some(Peg(Color.Yellow))
+      val peg = Some(Peg(Color.Yellow, None))
       field.toString(peg) should be("x")
     }
   }
