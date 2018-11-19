@@ -6,7 +6,7 @@ sealed trait Field { // 'sealed' traits can only be extended in same file
 
   def toString(peg: Option[Peg]) : String = {
     peg match {
-      case Some(peg) => peg.color.toString
+      case Some(peg) => peg.color.arg()
       case None    => emptyFieldString
     }
   }

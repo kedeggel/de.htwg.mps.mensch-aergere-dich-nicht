@@ -12,6 +12,14 @@ object Color extends Enumeration {
       case Green => 2
       case Red => 3
     }
+
+    // overridden toString() gets ignored so it is called arg instead...
+    def arg() : String = color match {
+      case Blue => "b"
+      case Yellow => "y"
+      case Green => "g"
+      case Red => "r"
+    }
   }
 
 }

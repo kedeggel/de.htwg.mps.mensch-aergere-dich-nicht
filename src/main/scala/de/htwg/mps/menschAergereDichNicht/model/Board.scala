@@ -5,7 +5,7 @@ import scala.collection.mutable.ListBuffer
 case class Board() {
   private val NUMBER_OF_FIELDS = 40
   private val COLOR_ORDER =
-    Array(Color.Yellow, Color.Red, Color.Blue, Color.Green)
+    Array(Color.Blue, Color.Yellow, Color.Green, Color.Red)
 
   val fields: Array[Field] = generateFields()
   val homeFields: Array[Array[HomeField]] = generateHomeFields()
@@ -26,10 +26,10 @@ case class Board() {
   )
 
   private val lookupTableOutFields = Array(
-    Array((0,0),(0,1),(1,0),(1,1)),
-    Array((9,0),(9,1),(10,0),(10,1)),
-    Array((0,9),(0,10),(1,9),(1,10)),
-    Array((9,9),(9,10),(10,9),(10,10))
+    Array((0,9),(0,10),(1,9),(1,10)), // down left
+    Array((0,0),(0,1),(1,0),(1,1)),   // up left
+    Array((9,0),(9,1),(10,0),(10,1)), // up right
+    Array((9,9),(9,10),(10,9),(10,10))// down right
   )
 
   private def generateFields(): Array[Field] = {
@@ -74,7 +74,7 @@ case class Board() {
     }
   }
 
-  override def toString: String = {
+  def toString(players: Array[Array[Peg]], turn: Option[Color.Value]): String = {
     // create array for text representation
     var fieldChars = Array.fill(11)(Array.fill(21)(" "))
 
@@ -97,6 +97,34 @@ case class Board() {
       for ( field <- colors) {
         var (x, y) = lookupField(field)
         fieldChars(y)(x*2) = field.toString(None)
+      }
+    }
+
+    // add pegs
+    for (pegs <- players) {
+      var outs = 0
+      for (peg <- pegs) {
+        if (peg.relativ_position().isDefined) {
+          var rel = peg.relativ_position().get
+          //draw on board
+          if (40 < rel) {
+            //home row
+            var home_id = rel - 40
+            var home_field = homeFields(peg.color.toInt())(home_id)
+            var (x, y) = lookupField(home_field)
+            fieldChars(y)(x*2) = home_field.toString(Some(peg))
+          } else {
+            var field = fields(peg.absolute_position().get)
+            var (x, y) = lookupField(field)
+            fieldChars(y)(x*2) = field.toString(Some(peg))
+          }
+        } else {
+          //draw on out field
+          var out_field = outFields(peg.color.toInt())(outs)
+          var (x, y) = lookupField(out_field)
+          fieldChars(y)(x*2) = out_field.toString(Some(peg))
+          outs += 1
+        }
       }
     }
 

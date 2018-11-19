@@ -15,4 +15,16 @@ case class Peg(color: Color.Value, field_id: Option[Int]) {
       case None => if (fields != 6) { Peg(color, None) } else { Peg(color, Some(0)) }
     }
   }
+  def relativ_position(): Option[Int] = {
+    field_id
+  }
+  def absolute_position(): Option[Int] = {
+    field_id match {
+      case Some(x) => {
+        val id_start_field = color.toInt() * 10
+        Some((x + id_start_field) % 40)
+      }
+      case None =>  field_id
+    }
+  }
 }
