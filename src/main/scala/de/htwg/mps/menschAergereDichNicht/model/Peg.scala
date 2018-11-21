@@ -21,10 +21,14 @@ case class Peg(color: Color.Value, field_id: Option[Int]) {
   def absolute_position(): Option[Int] = {
     field_id match {
       case Some(x) => {
-        val id_start_field = color.toInt() * 10
-        Some((x + id_start_field) % 40)
+        if (x < 40) { // not in home row
+          val id_start_field = color.toInt() * 10
+          Some((x + id_start_field) % 40)
+        } else { // in home row
+            None
+        }
       }
-      case None =>  field_id
+      case None => None
     }
   }
 }
