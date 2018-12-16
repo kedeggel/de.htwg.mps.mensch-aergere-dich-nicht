@@ -1,5 +1,6 @@
 package de.htwg.mps.menschAergereDichNicht.model
 
+import scala.util.control.Breaks._
 import scala.collection.mutable.ListBuffer
 
 case class Board() {
@@ -74,9 +75,15 @@ case class Board() {
     }
   }
 
-  def toString(players: Array[Array[Peg]], turn: Option[Color.Value]): String = {
+  def toString(players: Array[Array[Peg]]): String = {
+    val (text, _) = toStringMove(players, None)
+    text
+  }
+
+  def toStringMove(players: Array[Array[Peg]], options: Option[Array[Peg]]): (String, Int) = {
     // create array for text representation
     var fieldChars = Array.fill(11)(Array.fill(21)(" "))
+    var found = 0;
 
     // add normal and start fields
     for ( field <- fields ) {
@@ -103,6 +110,7 @@ case class Board() {
     // add pegs
     for (pegs <- players) {
       var outs = 0
+      var move_out = false
       for (peg <- pegs) {
         if (peg.relativ_position().isDefined) {
           var rel = peg.relativ_position().get
@@ -112,17 +120,58 @@ case class Board() {
             var home_id = rel - 40
             var home_field = homeFields(peg.color.toInt())(home_id)
             var (x, y) = lookupField(home_field)
-            fieldChars(y)(x*2) = home_field.toString(Some(peg))
+            // check if peg can be moved
+            if (options.isDefined) {
+              val color = options.get(0)
+              for ((o_peg, i) <- options.get.zipWithIndex) {
+                if (o_peg == peg) {
+                  found = i+1;
+                }
+              }
+            }
+            if (found == 0) {
+              fieldChars(y)(x*2) = home_field.toString(Some(peg))
+            } else {
+              fieldChars(y)(x*2) = found.toString
+            }
           } else {
             var field = fields(peg.absolute_position().get)
             var (x, y) = lookupField(field)
-            fieldChars(y)(x*2) = field.toString(Some(peg))
+            // check if peg can be moved
+            if (options.isDefined) {
+              val color = options.get(0)
+              for ((o_peg, i) <- options.get.zipWithIndex) {
+                if (o_peg == peg) {
+                  found = i+1;
+                }
+              }
+            }
+            if (found == 0) {
+              fieldChars(y)(x*2) = field.toString(Some(peg))
+            } else {
+              fieldChars(y)(x*2) = found.toString
+            }
           }
         } else {
           //draw on out field
           var out_field = outFields(peg.color.toInt())(outs)
           var (x, y) = lookupField(out_field)
-          fieldChars(y)(x*2) = out_field.toString(Some(peg))
+          // check if peg can be moved
+          if (options.isDefined && !move_out) {
+            val color = options.get(0)
+            breakable { for ((o_peg, i) <- options.get.zipWithIndex) {
+              if (o_peg == peg) {
+                found = i+1;
+                move_out = true
+                break
+              }
+            }}
+          }
+          if (found == 0) {
+            fieldChars(y)(x*2) = out_field.toString(Some(peg))
+          } else {
+            fieldChars(y)(x*2) = found.toString
+          }
           outs += 1
         }
       }
@@ -136,5 +185,7 @@ case class Board() {
 
     //remove last newline before returning
     boardString.dropRight(1)
+
+    (boardString, found)
   }
 }

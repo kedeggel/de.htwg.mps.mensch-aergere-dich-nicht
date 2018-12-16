@@ -1,5 +1,6 @@
 package de.htwg.mps.menschAergereDichNicht.model
 
+import scala.collection.mutable.ListBuffer
 
 
 case class Game(board: Board, pegs: Array[Array[Peg]], turn: Color.Value) {
@@ -46,5 +47,25 @@ case class Game(board: Board, pegs: Array[Array[Peg]], turn: Color.Value) {
     // TODO: change turn
 
     Game(board, new_pegs, turn)
+  }
+}
+
+object GameCreator {
+  def createGame(numPlayer: Int): Game = {
+    assert(numPlayer < 2 || 5 > numPlayer)
+    val players: ListBuffer[Array[Peg]] = new ListBuffer()
+    for ( i <- 0 to numPlayer-1) {
+      players += Array(
+        Peg(Color(i), None),
+        Peg(Color(i), None),
+        Peg(Color(i), None),
+        Peg(Color(i), None),
+      )
+    }
+
+    var game = Game(Board(), players.toArray, Color(0))
+
+    println(game.board.toString(game.pegs) + "\n")
+    game
   }
 }
