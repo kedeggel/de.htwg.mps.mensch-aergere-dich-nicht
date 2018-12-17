@@ -55,17 +55,21 @@ object GameCreator {
     assert(numPlayer < 2 || 5 > numPlayer)
     val players: ListBuffer[Array[Peg]] = new ListBuffer()
     for ( i <- 0 to numPlayer-1) {
+      val color = i match {
+        case 0 => Color.Blue
+        case 1 => Color.Green
+        case 2 => Color.Yellow
+        case _ => Color.Red
+      }
       players += Array(
-        Peg(Color(i), None),
-        Peg(Color(i), None),
-        Peg(Color(i), None),
-        Peg(Color(i), None),
+        Peg(color, None),
+        Peg(color, None),
+        Peg(color, None),
+        Peg(color, None),
       )
     }
 
-    var game = Game(Board(), players.toArray, Color(0))
-
-    println(game.board.toString(game.pegs) + "\n")
+    var game = Game(Board(), players.toArray, Color.Blue)
     game
   }
 }
