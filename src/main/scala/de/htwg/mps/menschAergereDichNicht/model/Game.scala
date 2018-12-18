@@ -3,7 +3,7 @@ package de.htwg.mps.menschAergereDichNicht.model
 import scala.collection.mutable.ListBuffer
 
 
-case class Game(board: Board, pegs: Array[Array[Peg]], turn: Color.Value) {
+case class Game(pegs: Array[Array[Peg]], turn: Color.Value) {
   // returns all the pegs that can be possible moved if moved by dice_roll
   def move_options(dice_roll: Int): Array[Peg] = {
     var result: Array[Peg] = Array()
@@ -46,7 +46,7 @@ case class Game(board: Board, pegs: Array[Array[Peg]], turn: Color.Value) {
 
     // TODO: change turn
 
-    Game(board, new_pegs, turn)
+    Game(new_pegs, turn)
   }
 }
 
@@ -69,7 +69,7 @@ object GameCreator {
       )
     }
 
-    var game = Game(Board(), players.toArray, Color.Blue)
+    var game = Game(players.toArray, Color.Blue)
     game
   }
 }

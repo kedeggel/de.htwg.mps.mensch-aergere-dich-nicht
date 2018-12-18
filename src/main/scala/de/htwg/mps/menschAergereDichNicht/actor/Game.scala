@@ -1,8 +1,13 @@
 package de.htwg.mps.menschAergereDichNicht.actor
 
 import akka.actor.{Actor, ActorPath, ActorSelection, FSM, Props}
-import de.htwg.mps.menschAergereDichNicht.actor
-import de.htwg.mps.menschAergereDichNicht.model.Color
+import akka.util.Timeout
+import scala.concurrent.duration._
+import akka.pattern.ask
+import de.htwg.mps.menschAergereDichNicht.model.{Board, Color}
+import de.htwg.mps.menschAergereDichNicht.model
+
+import scala.concurrent.Await
 
 final case object NewGame
 
@@ -118,6 +123,19 @@ class Game extends Actor with FSM[State, Data]{
     case Event(Move, GameData(current_player, player_count)) =>
       // TODO: player selected move, execute it
 
+      implicit val timeout = Timeout(1 seconds)
+      val future = context.system.actorSelection("**/Player" + current_player) ? RequestColorOfPlayer
+
+      val colorOfPlayer = Await.result(future, timeout.duration).asInstanceOf[model.Color.Value]
+
+      println("Current player has color " + colorOfPlayer.toString)
+
+      val pegs = get_pegs_of_player("Player" + current_player)
+
+      println("Current player peg 1 is on field: " + pegs(0).field_id)
+
+
+
       // TODO: check if next player is finished
       var next_player = current_player + 1
       if (player_count < next_player) {
@@ -142,6 +160,22 @@ class Game extends Actor with FSM[State, Data]{
     case Event(e, s) =>
       log.warning("received unhandled request {} in state {}/{}", e, stateName, s)
       stay
+  }
+
+
+  def get_pegs_of_player(player: String): Array[model.Peg] = {
+    implicit val timeout = Timeout(1 seconds)
+    val future_peg1 = context.system.actorSelection("**/" + player + "/Peg1") ? ReqeuestModelOfPeg
+    val future_peg2 = context.system.actorSelection("**/" + player + "/Peg2") ? ReqeuestModelOfPeg
+    val future_peg3 = context.system.actorSelection("**/" + player + "/Peg3") ? ReqeuestModelOfPeg
+    val future_peg4 = context.system.actorSelection("**/" + player + "/Peg4") ? ReqeuestModelOfPeg
+
+    val peg1 = Await.result(future_peg1, timeout.duration).asInstanceOf[model.Peg]
+    val peg2 = Await.result(future_peg2, timeout.duration).asInstanceOf[model.Peg]
+    val peg3 = Await.result(future_peg3, timeout.duration).asInstanceOf[model.Peg]
+    val peg4 = Await.result(future_peg4, timeout.duration).asInstanceOf[model.Peg]
+
+    Array(peg1, peg2, peg3, peg4)
   }
 
   initialize()

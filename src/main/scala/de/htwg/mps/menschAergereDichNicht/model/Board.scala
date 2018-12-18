@@ -3,7 +3,7 @@ package de.htwg.mps.menschAergereDichNicht.model
 import scala.util.control.Breaks._
 import scala.collection.mutable.ListBuffer
 
-case class Board() {
+case object Board {
   private val NUMBER_OF_FIELDS = 40
   private val COLOR_ORDER =
     Array(Color.Blue, Color.Yellow, Color.Green, Color.Red)

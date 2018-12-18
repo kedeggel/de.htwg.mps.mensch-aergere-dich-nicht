@@ -5,7 +5,7 @@ class Tui {
   def preInput(game: Option[Game]): Option[Game] = {
     if (game.isDefined) {
       val color = game.get.turn
-      var text = game.get.board.toString(game.get.pegs)
+      var text = Board.toString(game.get.pegs)
       println(text + "\n")
       println("It is players " + color + " turn!\n" +
         "Press d to roll the dice")
