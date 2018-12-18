@@ -12,9 +12,8 @@ final case class HumanCount(count: Int)
 
 final case object ConstructGame
 final case class RequestRollDice(player: String)
-final case object SelectMoveMsg
 final case class Rolled(value: Int)
-final case class SelectMoveMsg(player: String, value: Int)
+final case class RequestMovePeg(player: String, value: Int)
 
 final case object ShowBoard
 final case object ShowBoardWithOptions
@@ -38,7 +37,7 @@ case object Finish extends State
 sealed trait Data
 case object UninitializedGameData extends Data
 case class ConstructingGame(humans: Option[Int]) extends Data
-case class GameData(player: String) extends Data
+case class GameData(current_player: Int, player_count: Int) extends Data
 
 class Game extends Actor with FSM[State, Data]{
   startWith(New, UninitializedGameData)
@@ -68,7 +67,6 @@ class Game extends Actor with FSM[State, Data]{
       stay using ConstructingGame(Some(humans))
 
     case Event(ConstructGame, ConstructingGame(Some(humans))) =>
-      val data = GameData("Player1")
       var i = 0
       for (human_number <- 0 to humans) {
         val color = i match {
@@ -81,6 +79,7 @@ class Game extends Actor with FSM[State, Data]{
         i += 1
       }
 
+      val data = GameData(1, humans)
       log.info("Created new game {}", data)
       self ! RequestRollDice
       goto(RollDice) using data
@@ -95,9 +94,9 @@ class Game extends Actor with FSM[State, Data]{
   @enduml
    */
   when(RollDice) {
-    case Event(RequestRollDice, GameData(player)) =>
+    case Event(RequestRollDice, GameData(current_player, player_count)) =>
       views ! ShowBoard
-      views ! RequestRollDice(player)
+      views ! RequestRollDice("Player" + current_player)
       goto(SelectMove)
   }
 
@@ -110,12 +109,24 @@ class Game extends Actor with FSM[State, Data]{
   @enduml
    */
   when(SelectMove) {
-    case Event(Rolled(value), GameData(player)) =>
-      views ! SelectMoveMsg(player, value)
+    case Event(Rolled(value), GameData(current_player, player_count)) =>
+      views ! Rolled(value)
+      views ! ShowBoardWithOptions
+      views ! RequestMovePeg("Player" + current_player, value)
+      self ! Move
       stay
-    case Event(Move, GameData(player)) =>
+    case Event(Move, GameData(current_player, player_count)) =>
+      // TODO: player selected move, execute it
 
-      goto(RollDice) using GameData(player)
+      // TODO: check if next player is finished
+      var next_player = current_player + 1
+      if (player_count < next_player) {
+        next_player = 1
+      }
+      // TODO: check game status to switch to Finish instead of RollDice
+      println("Placeholder for Move")
+      self ! RequestRollDice
+      goto(RollDice) using GameData(next_player, player_count)
   }
 
   when(Finish) {

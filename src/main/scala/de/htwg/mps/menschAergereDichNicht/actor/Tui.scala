@@ -2,6 +2,8 @@ package de.htwg.mps.menschAergereDichNicht.actor
 
 import akka.actor.{Actor, ActorPath, ActorSelection, FSM}
 import akka.event.Logging
+import de.htwg.mps.menschAergereDichNicht.model.Dice
+
 import scala.io.StdIn.readLine
 
 
@@ -24,11 +26,26 @@ class Tui extends Actor {
         println("Turn for " + player + " press 'd' to roll the dice")
         scala.io.StdIn.readLine() match {
           case "d" =>
-            sender ! Rolled(3)
+            sender ! Rolled(Dice.role())
+          case "q" =>
+            sender ! QuitGame
           case _ =>
             println("Invalid input try again")
             self ! RequestRollDice(player)
         }
+      }
+
+    case Rolled(value) =>
+      println("Rolled " + value + "!")
+
+    case ShowBoardWithOptions =>
+      // TODO: somehow get pegs of current player + dice roll and show which can be moved
+      println("Placeholder for ShowBoardWithOptions")
+
+    case RequestMovePeg(_, _) =>
+      if(self.path.name == "ViewMain") {
+        // TODO: ask for user input to select peg to move
+        println("Placeholder for RequestMovePeg")
       }
   }
 }
