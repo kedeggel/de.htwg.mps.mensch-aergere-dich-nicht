@@ -2,11 +2,13 @@ package de.htwg.mps.menschAergereDichNicht.actor
 
 import akka.actor.{Actor, ActorPath, ActorSelection, FSM, Props}
 import akka.util.Timeout
+
 import scala.concurrent.duration._
 import akka.pattern.ask
 import de.htwg.mps.menschAergereDichNicht.model.{Board, Color}
 import de.htwg.mps.menschAergereDichNicht.model
 
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
 
 final case object NewGame
@@ -20,7 +22,7 @@ final case class RequestRollDice(player: String)
 final case class Rolled(value: Int)
 final case class RequestMovePeg(player: String, value: Int)
 
-final case object ShowBoard
+final case class ShowBoard(pegs: Array[Array[model.Peg]])
 final case object ShowBoardWithOptions
 
 
@@ -100,7 +102,7 @@ class Game extends Actor with FSM[State, Data]{
    */
   when(RollDice) {
     case Event(RequestRollDice, GameData(current_player, player_count)) =>
-      views ! ShowBoard
+      views ! ShowBoard(get_pegs_of_players(player_count))
       views ! RequestRollDice("Player" + current_player)
       goto(SelectMove)
   }
@@ -125,7 +127,6 @@ class Game extends Actor with FSM[State, Data]{
 
       implicit val timeout = Timeout(1 seconds)
       val future = context.system.actorSelection("**/Player" + current_player) ? RequestColorOfPlayer
-
       val colorOfPlayer = Await.result(future, timeout.duration).asInstanceOf[model.Color.Value]
 
       println("Current player has color " + colorOfPlayer.toString)
@@ -176,6 +177,15 @@ class Game extends Actor with FSM[State, Data]{
     val peg4 = Await.result(future_peg4, timeout.duration).asInstanceOf[model.Peg]
 
     Array(peg1, peg2, peg3, peg4)
+  }
+
+  def get_pegs_of_players(player_count: Int): Array[Array[model.Peg]] = {
+    var pegs: ListBuffer[Array[model.Peg]] = new ListBuffer()
+    for ( i <- 0 until player_count) {
+      val player_pegs = get_pegs_of_player("Player" + i)
+      pegs += player_pegs
+    }
+    pegs.toArray
   }
 
   initialize()

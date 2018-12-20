@@ -2,7 +2,7 @@ package de.htwg.mps.menschAergereDichNicht.actor
 
 import akka.actor.{Actor, ActorPath, ActorSelection, FSM}
 import akka.event.Logging
-import de.htwg.mps.menschAergereDichNicht.model.Dice
+import de.htwg.mps.menschAergereDichNicht.model.{Board, Dice}
 
 import scala.io.StdIn.readLine
 
@@ -18,8 +18,8 @@ class Tui extends Actor {
         sender ! HumanCount(humans)
       }
 
-    case ShowBoard =>
-      println("Placeholder for ShowBoard")
+    case ShowBoard(pegs) =>
+      println(Board.toString(pegs))
 
     case RequestRollDice(player) =>
       if(self.path.name == "ViewMain") {
