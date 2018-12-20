@@ -42,10 +42,37 @@ class Tui extends Actor {
       // TODO: somehow get pegs of current player + dice roll and show which can be moved
       println(Board.toStringMove(pegs, options))
 
-    case RequestMovePeg(_, _) =>
+    case RequestMovePeg(player, options) =>
       if(self.path.name == "ViewMain") {
         // TODO: ask for user input to select peg to move
-        println("Placeholder for RequestMovePeg")
+        println(player + "'s turn please select what to do")
+
+        var option_string = ""
+        var can_choose = false
+        for ((movable, i) <- options.zipWithIndex) {
+          if (movable) {
+            can_choose = true
+            option_string +=  (i+1) + " "
+          }
+        }
+
+        if (can_choose) {
+          println("Please select one of the following numbers: " + option_string)
+          val selected_peg = scala.io.StdIn.readInt()
+          if(0 <= selected_peg && selected_peg < 4 && options(selected_peg) ) {
+            sender ! ExecuteMove(Some(selected_peg))
+          } else {
+            println("Invalid input try again")
+            self ! RequestMovePeg(player, options)
+          }
+        } else {
+          println("Can't move any peg, press enter to end turn")
+          scala.io.StdIn.readLine()
+          sender ! ExecuteMove(None)
+        }
+
+
+
       }
   }
 }

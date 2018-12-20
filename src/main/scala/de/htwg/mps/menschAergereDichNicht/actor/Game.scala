@@ -20,7 +20,8 @@ final case class HumanCount(count: Int)
 final case object ConstructGame
 final case class RequestRollDice(player: String)
 final case class Rolled(value: Int)
-final case class RequestMovePeg(player: String, value: Int)
+final case class RequestMovePeg(player: String, options: Array[Boolean])
+final case class ExecuteMove(move: Option[Int])
 
 final case class ShowBoard(pegs: Array[Array[model.Peg]])
 final case class ShowBoardWithOptions(pegs: Array[Array[model.Peg]], options:Array[Option[model.Peg]])
@@ -36,8 +37,6 @@ case object New extends State
 case object RollDice extends State
 // check which moves are possible with the rolled number, let user select one
 case object SelectMove extends State
-// execute the move of the selected peg/skip if none could be moved
-case object Move extends State
 // game finished, show winning screen..., exit game or allow to create new one
 case object Finish extends State
 
@@ -137,18 +136,17 @@ class Game extends Actor with FSM[State, Data]{
         }
       }
 
+      // TODO: verify movable, maybe we would kick out our own peg
 
       views ! ShowBoardWithOptions(pegs, buf.toArray)
-      views ! RequestMovePeg("Player" + current_player, value)
-      self ! Move
+      views ! RequestMovePeg("Player" + current_player, movable)
       stay
-    case Event(Move, GameData(current_player, player_count)) =>
 
+    case Event(ExecuteMove(move), GameData(current_player, player_count)) =>
       // TODO: player selected move, execute it
 
       val pegs = get_pegs_of_player("Player" + current_player)
 
-      println("Current player peg 1 is on field: " + pegs(0).field_id)
 
 
 
@@ -158,7 +156,7 @@ class Game extends Actor with FSM[State, Data]{
         next_player = 1
       }
       // TODO: check game status to switch to Finish instead of RollDice
-      println("Placeholder for Move")
+      log.info("Placeholder for Move")
       self ! RequestRollDice
       goto(RollDice) using GameData(next_player, player_count)
   }
