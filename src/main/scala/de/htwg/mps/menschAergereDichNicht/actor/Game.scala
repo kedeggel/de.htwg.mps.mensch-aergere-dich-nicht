@@ -23,7 +23,7 @@ final case class Rolled(value: Int)
 final case class RequestMovePeg(player: String, value: Int)
 
 final case class ShowBoard(pegs: Array[Array[model.Peg]])
-final case object ShowBoardWithOptions
+final case class ShowBoardWithOptions(pegs: Array[Array[model.Peg]], options:Array[Option[model.Peg]])
 
 
 final case object ResetGame
@@ -117,19 +117,34 @@ class Game extends Actor with FSM[State, Data]{
    */
   when(SelectMove) {
     case Event(Rolled(value), GameData(current_player, player_count)) =>
+      implicit val timeout = Timeout(1 seconds)
+      val future = context.system.actorSelection("**/Player" + current_player) ? TryMove(value)
+
       views ! Rolled(value)
-      views ! ShowBoardWithOptions
+
+      val pegs = get_pegs_of_players(player_count)
+      val model_pegs = get_pegs_of_player("Player" + current_player)
+
+      val movable = Await.result(future, timeout.duration).asInstanceOf[Array[Boolean]]
+
+      val buf = new ListBuffer[Option[model.Peg]]
+
+      for ((moves, peg) <- movable zip model_pegs) {
+        if (moves) {
+          buf += Some(peg)
+        } else {
+          buf += None
+        }
+      }
+
+
+      views ! ShowBoardWithOptions(pegs, buf.toArray)
       views ! RequestMovePeg("Player" + current_player, value)
       self ! Move
       stay
     case Event(Move, GameData(current_player, player_count)) =>
+
       // TODO: player selected move, execute it
-
-      implicit val timeout = Timeout(1 seconds)
-      val future = context.system.actorSelection("**/Player" + current_player) ? RequestColorOfPlayer
-      val colorOfPlayer = Await.result(future, timeout.duration).asInstanceOf[model.Color.Value]
-
-      println("Current player has color " + colorOfPlayer.toString)
 
       val pegs = get_pegs_of_player("Player" + current_player)
 
@@ -163,20 +178,21 @@ class Game extends Actor with FSM[State, Data]{
       stay
   }
 
+  def get_current_player(player: Int): String = {
+    "Player" + player
+  }
+
+  def get_color_of_player(player: String): model.Color.Value = {
+    implicit val timeout = Timeout(1 seconds)
+    val future = context.system.actorSelection(player) ? RequestColorOfPlayer
+    Await.result(future, timeout.duration).asInstanceOf[model.Color.Value]
+  }
 
   def get_pegs_of_player(player: String): Array[model.Peg] = {
     implicit val timeout = Timeout(1 seconds)
-    val future_peg1 = context.system.actorSelection("**/" + player + "/Peg1") ? ReqeuestModelOfPeg
-    val future_peg2 = context.system.actorSelection("**/" + player + "/Peg2") ? ReqeuestModelOfPeg
-    val future_peg3 = context.system.actorSelection("**/" + player + "/Peg3") ? ReqeuestModelOfPeg
-    val future_peg4 = context.system.actorSelection("**/" + player + "/Peg4") ? ReqeuestModelOfPeg
+    val future_pegs = context.system.actorSelection("**/" + player) ? RequestPegsOfPlayer
 
-    val peg1 = Await.result(future_peg1, timeout.duration).asInstanceOf[model.Peg]
-    val peg2 = Await.result(future_peg2, timeout.duration).asInstanceOf[model.Peg]
-    val peg3 = Await.result(future_peg3, timeout.duration).asInstanceOf[model.Peg]
-    val peg4 = Await.result(future_peg4, timeout.duration).asInstanceOf[model.Peg]
-
-    Array(peg1, peg2, peg3, peg4)
+    Await.result(future_pegs, timeout.duration).asInstanceOf[Array[model.Peg]]
   }
 
   def get_pegs_of_players(player_count: Int): Array[Array[model.Peg]] = {

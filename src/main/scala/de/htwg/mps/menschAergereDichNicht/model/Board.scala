@@ -76,14 +76,12 @@ case object Board {
   }
 
   def toString(players: Array[Array[Peg]]): String = {
-    val (text, _) = toStringMove(players, None)
-    text
+    toStringMove(players, Array(None,None,None,None))
   }
 
-  def toStringMove(players: Array[Array[Peg]], options: Option[Array[Peg]]): (String, Int) = {
+  def toStringMove(players: Array[Array[Peg]], options: Array[Option[Peg]]): String = {
     // create array for text representation
     var fieldChars = Array.fill(11)(Array.fill(21)(" "))
-    var found = 0;
 
     // add normal and start fields
     for ( field <- fields ) {
@@ -109,8 +107,8 @@ case object Board {
 
     // add pegs
     for (pegs <- players) {
-      var outs = 0
       var move_out = false
+      var outs = 0;
       for (peg <- pegs) {
         if (peg.relativ_position().isDefined) {
           var rel = peg.relativ_position().get
@@ -120,60 +118,49 @@ case object Board {
             var home_id = rel - 40
             var home_field = homeFields(peg.color.toInt())(home_id)
             var (x, y) = lookupField(home_field)
-            // check if peg can be moved
-            if (options.isDefined) {
-              val color = options.get(0)
-              for ((o_peg, i) <- options.get.zipWithIndex) {
-                if (o_peg == peg) {
-                  found = i+1;
-                }
-              }
-            }
-            if (found == 0) {
-              fieldChars(y)(x*2) = home_field.toString(Some(peg))
-            } else {
-              fieldChars(y)(x*2) = found.toString
-            }
+            fieldChars(y)(x*2) = home_field.toString(Some(peg))
           } else {
             var field = fields(peg.absolute_position().get)
             var (x, y) = lookupField(field)
-            // check if peg can be moved
-            if (options.isDefined) {
-              val color = options.get(0)
-              for ((o_peg, i) <- options.get.zipWithIndex) {
-                if (o_peg == peg) {
-                  found = i+1;
-                }
-              }
-            }
-            if (found == 0) {
-              fieldChars(y)(x*2) = field.toString(Some(peg))
-            } else {
-              fieldChars(y)(x*2) = found.toString
-            }
+            fieldChars(y)(x*2) = field.toString(Some(peg))
           }
         } else {
           //draw on out field
           var out_field = outFields(peg.color.toInt())(outs)
           var (x, y) = lookupField(out_field)
-          // check if peg can be moved
-          if (options.isDefined && !move_out) {
-            val color = options.get(0)
-            breakable { for ((o_peg, i) <- options.get.zipWithIndex) {
-              if (o_peg == peg) {
-                found = i+1;
-                move_out = true
-                break
-              }
-            }}
-          }
-          if (found == 0) {
-            fieldChars(y)(x*2) = out_field.toString(Some(peg))
-          } else {
-            fieldChars(y)(x*2) = found.toString
-          }
+          fieldChars(y)(x*2) = out_field.toString(Some(peg))
           outs += 1
         }
+      }
+    }
+
+    var outs = 0
+    for ((peg, i) <- options.zipWithIndex) {
+      peg match {
+        case Some(peg) =>
+          if (peg.relativ_position().isDefined) {
+            var rel = peg.relativ_position().get
+            //draw on board
+            if (40 < rel) {
+              //home row
+              var home_id = rel - 40
+              var home_field = homeFields(peg.color.toInt())(home_id)
+              var (x, y) = lookupField(home_field)
+              fieldChars(y)(x*2) = (i+1).toString
+            } else {
+              var field = fields(peg.absolute_position().get)
+              var (x, y) = lookupField(field)
+              fieldChars(y)(x*2) = (i+1).toString
+            }
+          } else {
+            //draw on out field
+            var out_field = outFields(peg.color.toInt())(outs)
+            var (x, y) = lookupField(out_field)
+            fieldChars(y)(x*2) = (i+1).toString
+            outs += 1
+          }
+        case None =>
+          //Do nothing
       }
     }
 
@@ -186,6 +173,7 @@ case object Board {
     //remove last newline before returning
     boardString.dropRight(1)
 
-    (boardString, found)
+    boardString
   }
+
 }

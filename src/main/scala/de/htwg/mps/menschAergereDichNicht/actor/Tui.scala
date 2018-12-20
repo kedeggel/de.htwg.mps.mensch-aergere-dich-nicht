@@ -38,9 +38,9 @@ class Tui extends Actor {
     case Rolled(value) =>
       println("Rolled " + value + "!")
 
-    case ShowBoardWithOptions =>
+    case ShowBoardWithOptions(pegs, options) =>
       // TODO: somehow get pegs of current player + dice roll and show which can be moved
-      println("Placeholder for ShowBoardWithOptions")
+      println(Board.toStringMove(pegs, options))
 
     case RequestMovePeg(_, _) =>
       if(self.path.name == "ViewMain") {
