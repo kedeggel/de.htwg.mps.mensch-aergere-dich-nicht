@@ -9,7 +9,7 @@ import de.htwg.mps.menschAergereDichNicht.actor.{Game, Tui}
 
 object MenschAergereDichNicht extends App{
   val system = ActorSystem()
-  val game: ActorRef = system.actorOf(Props(classOf[Game]))
+  val game: ActorRef = system.actorOf(Props(classOf[Game]), "GameController")
   system.actorOf(Props[Tui], "ViewMain")
 //  system.actorOf(Props(classOf[Tui], "test2"), "View")
   game ! NewGame

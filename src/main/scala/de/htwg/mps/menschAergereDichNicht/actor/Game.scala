@@ -22,6 +22,7 @@ final case class RequestRollDice(player: String)
 final case class Rolled(value: Int)
 final case class RequestMovePeg(player: String, options: Array[Boolean])
 final case class ExecuteMove(move: Option[Int])
+final case object PrepareNextTurn
 
 final case class ShowBoard(pegs: Array[Array[model.Peg]])
 final case class ShowBoardWithOptions(pegs: Array[Array[model.Peg]], options:Array[Option[model.Peg]])
@@ -43,7 +44,7 @@ case object Finish extends State
 sealed trait Data
 case object UninitializedGameData extends Data
 case class ConstructingGame(humans: Option[Int]) extends Data
-case class GameData(current_player: Int, player_count: Int) extends Data
+case class GameData(current_player: Int, player_count: Int, roll: Option[Int]) extends Data
 
 class Game extends Actor with FSM[State, Data]{
   startWith(New, UninitializedGameData)
@@ -64,6 +65,7 @@ class Game extends Actor with FSM[State, Data]{
   when(New) {
     case Event(NewGame, UninitializedGameData) =>
       log.info("New Game")
+
       // Do feature?
       views ! RequestHumanCount(1,max_player)
       stay
@@ -73,19 +75,17 @@ class Game extends Actor with FSM[State, Data]{
       stay using ConstructingGame(Some(humans))
 
     case Event(ConstructGame, ConstructingGame(Some(humans))) =>
-      var i = 0
-      for (human_number <- 0 to humans) {
-        val color = i match {
-          case 0 => Color.Blue
-          case 1 => Color.Green
-          case 2 => Color.Yellow
+      for (human_number <- 1 to humans) {
+        val color = human_number match {
+          case 1 => Color.Blue
+          case 2 => Color.Green
+          case 3 => Color.Yellow
           case _ => Color.Red
         }
-        context.system.actorOf(Props(classOf[Player], color), "Player" + i)
-        i += 1
+        context.actorOf(Props(classOf[Player], color), "Player" + human_number)
       }
 
-      val data = GameData(1, humans)
+      val data = GameData(1, humans, None)
       log.info("Created new game {}", data)
       self ! RequestRollDice
       goto(RollDice) using data
@@ -100,7 +100,7 @@ class Game extends Actor with FSM[State, Data]{
   @enduml
    */
   when(RollDice) {
-    case Event(RequestRollDice, GameData(current_player, player_count)) =>
+    case Event(RequestRollDice, GameData(current_player, player_count, _)) =>
       views ! ShowBoard(get_pegs_of_players(player_count))
       views ! RequestRollDice("Player" + current_player)
       goto(SelectMove)
@@ -115,9 +115,11 @@ class Game extends Actor with FSM[State, Data]{
   @enduml
    */
   when(SelectMove) {
-    case Event(Rolled(value), GameData(current_player, player_count)) =>
+    case Event(Rolled(value), GameData(current_player, player_count, roll)) =>
       implicit val timeout = Timeout(1 seconds)
-      val future = context.system.actorSelection("**/Player" + current_player) ? TryMove(value)
+
+      // test move options relative to peg
+      val future = context.actorSelection("Player" + current_player) ? TryMove(value)
 
       views ! Rolled(value)
 
@@ -126,9 +128,34 @@ class Game extends Actor with FSM[State, Data]{
 
       val movable = Await.result(future, timeout.duration).asInstanceOf[Array[Boolean]]
 
+      // verifiy move options on board level
+      var updated_movable = new ListBuffer[Boolean]
+
+      for((can_move, i) <- movable.zipWithIndex) {
+        var allowd_by_game = true
+        if(can_move) {
+          // Pegs start at 1
+          val peg_to_move = context.actorSelection("Player" + current_player + "/Peg" + (i+1))
+          val color = get_color_of_player("Player" + current_player)
+          val future = peg_to_move ? TryMoveModel(color, value)
+          val pegs = get_pegs_of_player("Player" + current_player)
+
+          val target_position = Await.result(future, timeout.duration).asInstanceOf[model.Peg]
+
+          for (peg <- pegs) {
+            // check if we would kick out our own peg
+            if(peg.field_id == target_position.field_id) {
+              allowd_by_game = false
+            }
+            // TODO: check if we rolled 6, start field is empty and we have a peg out
+          }
+        }
+        updated_movable += can_move && allowd_by_game
+      }
+
       val buf = new ListBuffer[Option[model.Peg]]
 
-      for ((moves, peg) <- movable zip model_pegs) {
+      for ((moves, peg) <- updated_movable zip model_pegs) {
         if (moves) {
           buf += Some(peg)
         } else {
@@ -136,18 +163,26 @@ class Game extends Actor with FSM[State, Data]{
         }
       }
 
-      // TODO: verify movable, maybe we would kick out our own peg
-
       views ! ShowBoardWithOptions(pegs, buf.toArray)
-      views ! RequestMovePeg("Player" + current_player, movable)
+      views ! RequestMovePeg("Player" + current_player, updated_movable.toArray)
+      stay using GameData(current_player, player_count, Some(value))
+
+    case Event(ExecuteMove(move), GameData(current_player, player_count, roll)) =>
+      // TODO: player selected move, execute it
+      implicit val timeout = Timeout(1 seconds)
+
+      (move, roll) match {
+        case (Some(move), Some(roll)) =>
+          // TODO: remove peg from board if it gets kicked out
+          val peg_to_move = context.actorSelection("Player" + current_player + "/Peg" + move)
+          peg_to_move ! MoveIt(roll)
+        case _ =>
+          self ! PrepareNextTurn
+      }
+
       stay
 
-    case Event(ExecuteMove(move), GameData(current_player, player_count)) =>
-      // TODO: player selected move, execute it
-
-      val pegs = get_pegs_of_player("Player" + current_player)
-
-
+    case Event(PrepareNextTurn, GameData(current_player, player_count, roll)) =>
 
 
       // TODO: check if next player is finished
@@ -158,7 +193,7 @@ class Game extends Actor with FSM[State, Data]{
       // TODO: check game status to switch to Finish instead of RollDice
       log.info("Placeholder for Move")
       self ! RequestRollDice
-      goto(RollDice) using GameData(next_player, player_count)
+      goto(RollDice) using GameData(next_player, player_count, None)
   }
 
   when(Finish) {
@@ -182,20 +217,20 @@ class Game extends Actor with FSM[State, Data]{
 
   def get_color_of_player(player: String): model.Color.Value = {
     implicit val timeout = Timeout(1 seconds)
-    val future = context.system.actorSelection(player) ? RequestColorOfPlayer
+    val future = context.actorSelection(player) ? RequestColorOfPlayer
     Await.result(future, timeout.duration).asInstanceOf[model.Color.Value]
   }
 
   def get_pegs_of_player(player: String): Array[model.Peg] = {
     implicit val timeout = Timeout(1 seconds)
-    val future_pegs = context.system.actorSelection("**/" + player) ? RequestPegsOfPlayer
+    val future_pegs = context.actorSelection(player) ? RequestPegsOfPlayer
 
     Await.result(future_pegs, timeout.duration).asInstanceOf[Array[model.Peg]]
   }
 
   def get_pegs_of_players(player_count: Int): Array[Array[model.Peg]] = {
     var pegs: ListBuffer[Array[model.Peg]] = new ListBuffer()
-    for ( i <- 0 until player_count) {
+    for ( i <- 1 to player_count) {
       val player_pegs = get_pegs_of_player("Player" + i)
       pegs += player_pegs
     }

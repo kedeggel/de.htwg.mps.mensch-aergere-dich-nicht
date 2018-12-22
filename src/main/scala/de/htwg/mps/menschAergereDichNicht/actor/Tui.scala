@@ -59,9 +59,10 @@ class Tui extends Actor {
         if (can_choose) {
           println("Please select one of the following numbers: " + option_string)
           val selected_peg = scala.io.StdIn.readInt()
-          if(0 <= selected_peg && selected_peg < 4 && options(selected_peg) ) {
+          if(1 <= selected_peg && selected_peg < 5 && options(selected_peg-1) ) {
             sender ! ExecuteMove(Some(selected_peg))
           } else {
+            // TODO: sender ! is wrong if this gets executed, handle without actors
             println("Invalid input try again")
             self ! RequestMovePeg(player, options)
           }

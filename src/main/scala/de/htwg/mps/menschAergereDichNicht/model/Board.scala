@@ -113,7 +113,7 @@ case object Board {
         if (peg.relativ_position().isDefined) {
           var rel = peg.relativ_position().get
           //draw on board
-          if (40 < rel) {
+          if (39 < rel) {
             //home row
             var home_id = rel - 40
             var home_field = homeFields(peg.color.toInt())(home_id)

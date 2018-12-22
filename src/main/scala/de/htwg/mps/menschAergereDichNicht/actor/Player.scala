@@ -20,6 +20,7 @@ final case class PegsOfPlayer(pegs: Array[model.Peg])
 final case class ReqeuestModelOfPeg(color: model.Color.Value)
 
 final case class TryMove(steps: Int)
+final case class TryMoveModel(color: model.Color.Value, steps: Int)
 final case class MoveIt(steps: Int)
 
 class Player(color: model.Color.Value) extends Actor {
@@ -66,6 +67,6 @@ class Player(color: model.Color.Value) extends Actor {
       sender ! Array(peg1, peg2, peg3, peg4)
 
     case _ =>
-      println("Player with color {} received message", color)
+      log.warning("Player with color {} received message", color)
   }
 }

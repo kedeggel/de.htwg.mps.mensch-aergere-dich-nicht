@@ -19,11 +19,14 @@ class Peg extends Actor {
     case TryMove(steps) =>
       // can move when new_position is different to old one
         sender ! (position != new_position(position, steps))
+    case TryMoveModel(color, steps) =>
+      sender ! model.Peg(color, new_position(position, steps))
     case MoveIt(steps) =>
       position = new_position(position, steps)
+      sender ! PrepareNextTurn
 
     case _ =>
-      println("Player with color received message")
+      log.warning("Peg with path {} received message", self.path)
 
 
   }
@@ -39,7 +42,7 @@ class Peg extends Actor {
       case Some(old) =>
         //overstepped homerow
         val updated = old + steps
-        if (44 < updated) {
+        if (43 < updated) {
           None
         } else {
           Some(updated)
