@@ -26,6 +26,7 @@ final case class RequestMovePeg(player: String, options: Array[Boolean])
 final case class ExecuteMove(move: Option[Int])
 final case object PrepareNextTurn
 final case object Finished
+final case class KickOut(other: model.Peg)
 
 final case class ShowBoard(pegs: Array[Array[model.Peg]])
 final case class ShowBoardWithOptions(pegs: Array[Array[model.Peg]], options:Array[Option[model.Peg]])
@@ -141,7 +142,7 @@ class Game extends Actor with FSM[State, Data]{
           // Pegs start at 1
           val peg_to_move = context.actorSelection("Player" + current_player + "/Peg" + (i+1))
           val color = get_color_of_player("Player" + current_player)
-          val future = peg_to_move ? TryMoveModel(color, value)
+          val future = peg_to_move ? TryMoveModel(value)
           val pegs = get_pegs_of_player("Player" + current_player)
 
           val target_position = Await.result(future, timeout.duration).asInstanceOf[model.Peg]
@@ -176,7 +177,6 @@ class Game extends Actor with FSM[State, Data]{
 
       (move, roll) match {
         case (Some(move), Some(roll)) =>
-          // TODO: remove peg from board if it gets kicked out
           val peg_to_move = context.actorSelection("Player" + current_player + "/Peg" + move)
           peg_to_move ! MoveIt(roll)
         case _ =>

@@ -17,10 +17,10 @@ final case class ColorOfPlayer(color: model.Color.Value)
 final case object RequestPegsOfPlayer
 final case class PegsOfPlayer(pegs: Array[model.Peg])
 
-final case class ReqeuestModelOfPeg(color: model.Color.Value)
+final case object ReqeuestModelOfPeg
 
 final case class TryMove(steps: Int)
-final case class TryMoveModel(color: model.Color.Value, steps: Int)
+final case class TryMoveModel(steps: Int)
 final case class MoveIt(steps: Int)
 final case object ReportHome
 
@@ -28,10 +28,10 @@ class Player(color: model.Color.Value) extends Actor {
   import context.dispatcher
   val log = Logging(context.system, this)
   val pegs = Array(
-    context.actorOf(Props[Peg], "Peg1"),
-    context.actorOf(Props[Peg], "Peg2"),
-    context.actorOf(Props[Peg], "Peg3"),
-    context.actorOf(Props[Peg], "Peg4"),
+    context.actorOf(Props(classOf[Peg], color), "Peg1"),
+    context.actorOf(Props(classOf[Peg], color), "Peg2"),
+    context.actorOf(Props(classOf[Peg], color), "Peg3"),
+    context.actorOf(Props(classOf[Peg], color), "Peg4"),
   )
   var pegs_home = 0
   override def receive: Receive = {
@@ -40,10 +40,10 @@ class Player(color: model.Color.Value) extends Actor {
 
     case RequestPegsOfPlayer =>
       implicit val timeout = Timeout(1 seconds)
-      val future_peg1 = pegs(0) ? ReqeuestModelOfPeg(color)
-      val future_peg2 = pegs(1) ? ReqeuestModelOfPeg(color)
-      val future_peg3 = pegs(2) ? ReqeuestModelOfPeg(color)
-      val future_peg4 = pegs(3) ? ReqeuestModelOfPeg(color)
+      val future_peg1 = pegs(0) ? ReqeuestModelOfPeg
+      val future_peg2 = pegs(1) ? ReqeuestModelOfPeg
+      val future_peg3 = pegs(2) ? ReqeuestModelOfPeg
+      val future_peg4 = pegs(3) ? ReqeuestModelOfPeg
 
       val peg1 = Await.result(future_peg1, timeout.duration).asInstanceOf[model.Peg]
       val peg2 = Await.result(future_peg2, timeout.duration).asInstanceOf[model.Peg]
