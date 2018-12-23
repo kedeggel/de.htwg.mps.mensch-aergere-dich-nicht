@@ -73,6 +73,9 @@ class Tui extends Actor {
     case ShowBoardWithOptions(pegs, options) =>
       println(Board.toStringMove(pegs, options))
 
+    case ShowWinScreen(winner) =>
+      println("{} has won!".format(winner))
+
     case RequestMovePeg(player, options) =>
       if(self.path.name == "ViewMain") {
         println(player + "'s turn please select what to do")

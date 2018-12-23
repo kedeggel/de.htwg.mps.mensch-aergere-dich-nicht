@@ -22,7 +22,16 @@ class Peg extends Actor {
     case TryMoveModel(color, steps) =>
       sender ! model.Peg(color, new_position(position, steps))
     case MoveIt(steps) =>
-      position = new_position(position, steps)
+      val new_pos = new_position(position, steps)
+      (position, new_pos) match {
+        case (Some(old_pos), Some(new_pos)) =>
+          // moved from board into home
+          if (old_pos <= 39 && 39 < new_pos) {
+            context.parent ! ReportHome
+          }
+        case _ =>
+      }
+      position = new_pos
       sender ! PrepareNextTurn
 
     case _ =>
@@ -42,10 +51,10 @@ class Peg extends Actor {
       case Some(old) =>
         //overstepped homerow
         val updated = old + steps
-        if (43 < updated) {
-          None
-        } else {
+        if (updated < 44) {
           Some(updated)
+        } else {
+          Some(old)
         }
     }
   }

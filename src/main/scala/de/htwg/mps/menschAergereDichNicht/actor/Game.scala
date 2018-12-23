@@ -11,6 +11,8 @@ import de.htwg.mps.menschAergereDichNicht.model
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
 
+import util.control.Breaks._
+
 final case object NewGame
 
 // Human Player Count
@@ -23,9 +25,11 @@ final case class Rolled(value: Int)
 final case class RequestMovePeg(player: String, options: Array[Boolean])
 final case class ExecuteMove(move: Option[Int])
 final case object PrepareNextTurn
+final case object Finished
 
 final case class ShowBoard(pegs: Array[Array[model.Peg]])
 final case class ShowBoardWithOptions(pegs: Array[Array[model.Peg]], options:Array[Option[model.Peg]])
+final case class ShowWinScreen(winner: String)
 
 
 final case object ResetGame
@@ -182,20 +186,40 @@ class Game extends Actor with FSM[State, Data]{
       stay
 
     case Event(PrepareNextTurn, GameData(current_player, player_count, roll)) =>
+      implicit val timeout = Timeout(1 seconds)
 
-
-      // TODO: check if next player is finished
       var next_player = current_player + 1
-      if (player_count < next_player) {
-        next_player = 1
+      var determined_next_player = false
+      var finished = false
+
+      while (!determined_next_player) {
+        if (player_count+1 == next_player) {
+          next_player = 1
+        }
+        val future = context.actorSelection("Player"+next_player) ? Finished
+        determined_next_player = !Await.result(future, timeout.duration).asInstanceOf[Boolean]
+        if (next_player == current_player && !determined_next_player) {
+          //no next player
+          finished = true
+          determined_next_player = true
+        }
+
+        if (!determined_next_player) {
+          next_player += 1
+        }
       }
-      // TODO: check game status to switch to Finish instead of RollDice
-      log.info("Placeholder for Move")
-      self ! RequestRollDice
-      goto(RollDice) using GameData(next_player, player_count, None)
+
+      if (finished) {
+        views ! ShowWinScreen("Winner Placeholder")
+        goto(Finish) using UninitializedGameData
+      } else {
+        self ! RequestRollDice
+        goto(RollDice) using GameData(next_player, player_count, None)
+      }
   }
 
   when(Finish) {
+    // TODO: handle this state correctly
     case _ =>
       stay
   }

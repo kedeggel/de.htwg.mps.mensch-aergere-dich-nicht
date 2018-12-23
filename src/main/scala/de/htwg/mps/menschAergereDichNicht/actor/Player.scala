@@ -22,6 +22,7 @@ final case class ReqeuestModelOfPeg(color: model.Color.Value)
 final case class TryMove(steps: Int)
 final case class TryMoveModel(color: model.Color.Value, steps: Int)
 final case class MoveIt(steps: Int)
+final case object ReportHome
 
 class Player(color: model.Color.Value) extends Actor {
   import context.dispatcher
@@ -32,6 +33,7 @@ class Player(color: model.Color.Value) extends Actor {
     context.actorOf(Props[Peg], "Peg3"),
     context.actorOf(Props[Peg], "Peg4"),
   )
+  var pegs_home = 0
   override def receive: Receive = {
     case RequestColorOfPlayer =>
       sender ! color
@@ -65,6 +67,12 @@ class Player(color: model.Color.Value) extends Actor {
       val peg4 = Await.result(future_peg4, timeout.duration).asInstanceOf[Boolean]
 
       sender ! Array(peg1, peg2, peg3, peg4)
+
+    case ReportHome =>
+      pegs_home += 1
+
+    case Finished =>
+      sender ! (pegs_home == 4)
 
     case _ =>
       log.warning("Player with color {} received message", color)
