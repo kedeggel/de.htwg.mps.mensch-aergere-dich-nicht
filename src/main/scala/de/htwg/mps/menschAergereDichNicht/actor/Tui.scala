@@ -13,9 +13,22 @@ class Tui extends Actor {
   override def receive: Receive = {
     case RequestHumanCount(min, max) =>
       if(self.path.name == "ViewMain") {
-        println( "Please insert number of Human Players [" + min + "-" + max +"]" )
-        val humans = scala.io.StdIn.readInt()
-        sender ! HumanCount(humans)
+
+        var valid_input = false
+
+        while (!valid_input) {
+          println( "Please insert number of Human Players [" + min + "-" + max +"]" )
+          try {
+            val humans = scala.io.StdIn.readInt()
+            if (0 < humans && humans < 5) {
+              sender ! HumanCount(humans)
+              valid_input = true
+            }
+          } catch {
+            case e: NumberFormatException =>
+              println("Invalid input please try again...")
+          }
+        }
       }
 
     case ShowBoard(pegs) =>
@@ -23,15 +36,21 @@ class Tui extends Actor {
 
     case RequestRollDice(player) =>
       if(self.path.name == "ViewMain") {
-        println("Turn for " + player + " press 'd' to roll the dice")
-        scala.io.StdIn.readLine() match {
-          case "d" =>
-            sender ! Rolled(Dice.role())
-          case "q" =>
-            sender ! QuitGame
-          case _ =>
-            println("Invalid input try again")
-            self ! RequestRollDice(player)
+
+        var valid_input = false
+
+        while (!valid_input) {
+          println("Turn for " + player + " press 'd' to roll the dice")
+          scala.io.StdIn.readLine() match {
+            case "d" =>
+              sender ! Rolled(Dice.role())
+              valid_input = true
+            case "q" =>
+              sender ! QuitGame
+              valid_input = true
+            case _ =>
+              println("Invalid input try again...")
+          }
         }
       }
 
@@ -56,24 +75,30 @@ class Tui extends Actor {
           }
         }
 
-        if (can_choose) {
-          println("Please select one of the following numbers: " + option_string)
-          val selected_peg = scala.io.StdIn.readInt()
-          if(1 <= selected_peg && selected_peg < 5 && options(selected_peg-1) ) {
-            sender ! ExecuteMove(Some(selected_peg))
+        var valid_input = false
+
+        while (!valid_input) {
+          if (can_choose) {
+            try {
+              println("Please select one of the following numbers: " + option_string)
+              val selected_peg = scala.io.StdIn.readInt()
+              if (1 <= selected_peg && selected_peg < 5 && options(selected_peg - 1)) {
+                sender ! ExecuteMove(Some(selected_peg))
+                valid_input = true
+              } else {
+                println("Invalid input try again...")
+              }
+            } catch {
+              case e: NumberFormatException =>
+                println("Invalid input try again...")
+            }
           } else {
-            // TODO: sender ! is wrong if this gets executed, handle without actors
-            println("Invalid input try again")
-            self ! RequestMovePeg(player, options)
+            println("Can't move any peg, press enter to end turn")
+            scala.io.StdIn.readLine()
+            sender ! ExecuteMove(None)
+            valid_input = true
           }
-        } else {
-          println("Can't move any peg, press enter to end turn")
-          scala.io.StdIn.readLine()
-          sender ! ExecuteMove(None)
         }
-
-
-
       }
   }
 }
