@@ -41,15 +41,28 @@ class Tui extends Actor {
 
         while (!valid_input) {
           println("Turn for " + player + " press 'd' to roll the dice")
-          scala.io.StdIn.readLine() match {
-            case "d" =>
-              sender ! Rolled(Dice.role())
-              valid_input = true
-            case "q" =>
-              sender ! QuitGame
-              valid_input = true
-            case _ =>
-              println("Invalid input try again...")
+          val input = scala.io.StdIn.readLine()
+
+          try {
+            val roll = input.toInt
+            sender ! Rolled(roll)
+            valid_input = true
+          } catch {
+            case e: Exception =>
+          }
+
+          if (!valid_input) {
+            input match {
+              case "d" =>
+                sender ! Rolled(Dice.role())
+                valid_input = true
+
+              case "q" =>
+                sender ! QuitGame
+                valid_input = true
+              case _ =>
+                println("Invalid input try again...")
+            }
           }
         }
       }
