@@ -168,7 +168,6 @@ class Game extends Actor with FSM[State, Data]{
       stay using GameData(current_player, player_count, Some(value))
 
     case Event(ExecuteMove(move), GameData(current_player, player_count, roll)) =>
-      // TODO: player selected move, execute it
       implicit val timeout = Timeout(1 seconds)
 
       (move, roll) match {

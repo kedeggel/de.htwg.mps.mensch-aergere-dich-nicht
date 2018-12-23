@@ -58,12 +58,10 @@ class Tui extends Actor {
       println("Rolled " + value + "!")
 
     case ShowBoardWithOptions(pegs, options) =>
-      // TODO: somehow get pegs of current player + dice roll and show which can be moved
       println(Board.toStringMove(pegs, options))
 
     case RequestMovePeg(player, options) =>
       if(self.path.name == "ViewMain") {
-        // TODO: ask for user input to select peg to move
         println(player + "'s turn please select what to do")
 
         var option_string = ""
