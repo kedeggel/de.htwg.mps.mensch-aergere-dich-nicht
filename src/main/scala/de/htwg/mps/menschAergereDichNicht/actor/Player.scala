@@ -71,6 +71,12 @@ class Player(color: model.Color.Value) extends Actor {
     case ReportHome =>
       pegs_home += 1
 
+    case MoveIt(_) =>
+      if (pegs_home == 4) {
+        sender ! PlayerFinished
+      }
+      sender ! PrepareNextTurn
+
     case Finished =>
       sender ! (pegs_home == 4)
 

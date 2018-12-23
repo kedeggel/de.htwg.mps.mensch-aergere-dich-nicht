@@ -30,7 +30,10 @@ final case class KickOut(other: model.Peg)
 
 final case class ShowBoard(pegs: Array[Array[model.Peg]])
 final case class ShowBoardWithOptions(pegs: Array[Array[model.Peg]], options:Array[Option[model.Peg]])
-final case class ShowWinScreen(winner: String)
+final case class ShowWinScreen(winner: Array[String])
+final case object PlayerFinished
+final case object ShowedWinScreen
+final case object EndGame
 
 
 final case object ResetGame
@@ -49,7 +52,7 @@ case object Finish extends State
 sealed trait Data
 case object UninitializedGameData extends Data
 case class ConstructingGame(humans: Option[Int]) extends Data
-case class GameData(current_player: Int, player_count: Int, roll: Option[Int]) extends Data
+case class GameData(current_player: Int, player_count: Int, roll: Option[Int], winner_list: Array[String]) extends Data
 
 class Game extends Actor with FSM[State, Data]{
   startWith(New, UninitializedGameData)
@@ -90,7 +93,7 @@ class Game extends Actor with FSM[State, Data]{
         context.actorOf(Props(classOf[Player], color), "Player" + human_number)
       }
 
-      val data = GameData(1, humans, None)
+      val data = GameData(1, humans, None, Array())
       log.info("Created new game {}", data)
       self ! RequestRollDice
       goto(RollDice) using data
@@ -105,7 +108,7 @@ class Game extends Actor with FSM[State, Data]{
   @enduml
    */
   when(RollDice) {
-    case Event(RequestRollDice, GameData(current_player, player_count, _)) =>
+    case Event(RequestRollDice, GameData(current_player, player_count, _, _)) =>
       views ! ShowBoard(get_pegs_of_players(player_count))
       views ! RequestRollDice("Player" + current_player)
       goto(SelectMove)
@@ -120,7 +123,7 @@ class Game extends Actor with FSM[State, Data]{
   @enduml
    */
   when(SelectMove) {
-    case Event(Rolled(value), GameData(current_player, player_count, roll)) =>
+    case Event(Rolled(value), GameData(current_player, player_count, roll, winner)) =>
       implicit val timeout = Timeout(1 seconds)
 
       // test move options relative to peg
@@ -170,9 +173,9 @@ class Game extends Actor with FSM[State, Data]{
 
       views ! ShowBoardWithOptions(pegs, buf.toArray)
       views ! RequestMovePeg("Player" + current_player, updated_movable.toArray)
-      stay using GameData(current_player, player_count, Some(value))
+      stay using GameData(current_player, player_count, Some(value), winner)
 
-    case Event(ExecuteMove(move), GameData(current_player, player_count, roll)) =>
+    case Event(ExecuteMove(move), GameData(current_player, player_count, roll, _)) =>
       implicit val timeout = Timeout(1 seconds)
 
       (move, roll) match {
@@ -185,7 +188,12 @@ class Game extends Actor with FSM[State, Data]{
 
       stay
 
-    case Event(PrepareNextTurn, GameData(current_player, player_count, roll)) =>
+    case Event(PlayerFinished, GameData(current_player, player_count, roll, winner_list)) =>
+      var arr = winner_list
+      arr :+= sender.path.name
+      stay using GameData(current_player, player_count, roll, arr)
+
+    case Event(PrepareNextTurn, GameData(current_player, player_count, roll, winner)) =>
       implicit val timeout = Timeout(1 seconds)
 
       var next_player = current_player + 1
@@ -209,24 +217,33 @@ class Game extends Actor with FSM[State, Data]{
         }
       }
 
-      if (finished) {
-        views ! ShowWinScreen("Winner Placeholder")
+      if (finished || (player_count != 1 && winner.length == player_count-1)) {
+        var new_winner = winner
+        if (!finished) {
+          new_winner :+= "Player" + next_player
+        }
+        views ! ShowWinScreen(new_winner)
         goto(Finish) using UninitializedGameData
       } else {
         self ! RequestRollDice
-        goto(RollDice) using GameData(next_player, player_count, None)
+        goto(RollDice) using GameData(next_player, player_count, None, winner)
       }
   }
 
   when(Finish) {
-    // TODO: handle this state correctly
+    case Event(ShowedWinScreen, _) =>
+      views ! EndGame
+      stay
+    case Event(QuitGame, _) =>
+      context.system.terminate()
+      stay
     case _ =>
       stay
   }
 
   whenUnhandled {
     case Event(QuitGame, s) =>
-      log.info("Default handler: Quiting Game")
+      log.warning("Default handler: Quiting Game")
       context.system.terminate()
       stay
     case Event(e, s) =>

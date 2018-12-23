@@ -74,7 +74,10 @@ class Tui extends Actor {
       println(Board.toStringMove(pegs, options))
 
     case ShowWinScreen(winner) =>
-      println("{} has won!".format(winner))
+      for ((winner, i) <- winner.zipWithIndex) {
+        println((i+1) + ". place is " + winner)
+      }
+      sender ! ShowedWinScreen
 
     case RequestMovePeg(player, options) =>
       if(self.path.name == "ViewMain") {
@@ -114,5 +117,10 @@ class Tui extends Actor {
           }
         }
       }
+
+    case EndGame =>
+      println("Quiting Game press enter to confirm...")
+      scala.io.StdIn.readLine()
+      sender ! QuitGame
   }
 }

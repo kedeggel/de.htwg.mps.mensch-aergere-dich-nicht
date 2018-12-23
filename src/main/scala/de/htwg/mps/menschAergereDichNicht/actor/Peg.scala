@@ -35,12 +35,12 @@ class Peg(color: model.Color.Value) extends Actor {
         case _ =>
       }
       position = new_pos
-      sender ! PrepareNextTurn
+      context.parent forward MoveIt(steps)
     case KickOut(other) =>
       if (sender.path.parent == self.path.parent) {
       } else {
         val me = model.Peg(color, position)
-        if (me.absolute_position() == other.absolute_position()) {
+        if (me.absolute_position().isDefined &&  me.absolute_position() == other.absolute_position()) {
           position = None
         }
       }
