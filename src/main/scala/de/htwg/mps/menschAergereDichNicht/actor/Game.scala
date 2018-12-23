@@ -11,33 +11,38 @@ import de.htwg.mps.menschAergereDichNicht.model
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
 
-import util.control.Breaks._
-
+// starts actor system game in main
 final case object NewGame
 
-// Human Player Count
-final case class RequestHumanCount(min: Int, max: Int)
-final case class HumanCount(count: Int)
-
+// from/to Game
 final case object ConstructGame
-final case class RequestRollDice(player: String)
-final case class Rolled(value: Int)
-final case class RequestMovePeg(player: String, options: Array[Boolean])
-final case class ExecuteMove(move: Option[Int])
 final case object PrepareNextTurn
-final case object Finished
-final case class KickOut(other: model.Peg)
+final case object EndGame
 
+// to TUI
+final case class RequestHumanCount(min: Int, max: Int)
+final case class RequestRollDice(player: String)
+final case class RequestMovePeg(player: String, options: Array[Boolean])
 final case class ShowBoard(pegs: Array[Array[model.Peg]])
 final case class ShowBoardWithOptions(pegs: Array[Array[model.Peg]], options:Array[Option[model.Peg]])
 final case class ShowWinScreen(winner: Array[String])
-final case object PlayerFinished
+// from TUI
+final case class HumanCount(count: Int)
+final case class Rolled(value: Int)
+final case class ExecuteMove(move: Option[Int])
 final case object ShowedWinScreen
-final case object EndGame
-
-
-final case object ResetGame
 final case object QuitGame
+
+// to Player
+final case object RequestPegsOfPlayer
+final case object Finished
+// from Player
+final case class PegsOfPlayer(pegs: Array[model.Peg])
+final case object PlayerFinished
+
+// to Peg
+final case class TryMoveModel(steps: Int)
+final case class MoveIt(steps: Int)
 
 sealed trait State
 // try to initialize the game, by getting necessary parameters from the player

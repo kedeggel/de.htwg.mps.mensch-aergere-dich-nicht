@@ -11,17 +11,14 @@ import de.htwg.mps.menschAergereDichNicht.model
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{Await, Future}
 
-final case object RequestColorOfPlayer
+// to Peg
+final case class KickOut(other: model.Peg)
 final case class ColorOfPlayer(color: model.Color.Value)
-
-final case object RequestPegsOfPlayer
-final case class PegsOfPlayer(pegs: Array[model.Peg])
-
-final case object ReqeuestModelOfPeg
-
+final case object RequestModelOfPeg
 final case class TryMove(steps: Int)
-final case class TryMoveModel(steps: Int)
-final case class MoveIt(steps: Int)
+
+// from Peg
+final case object RequestColorOfPlayer
 final case object ReportHome
 
 class Player(color: model.Color.Value) extends Actor {
@@ -40,10 +37,10 @@ class Player(color: model.Color.Value) extends Actor {
 
     case RequestPegsOfPlayer =>
       implicit val timeout = Timeout(1 seconds)
-      val future_peg1 = pegs(0) ? ReqeuestModelOfPeg
-      val future_peg2 = pegs(1) ? ReqeuestModelOfPeg
-      val future_peg3 = pegs(2) ? ReqeuestModelOfPeg
-      val future_peg4 = pegs(3) ? ReqeuestModelOfPeg
+      val future_peg1 = pegs(0) ? RequestModelOfPeg
+      val future_peg2 = pegs(1) ? RequestModelOfPeg
+      val future_peg3 = pegs(2) ? RequestModelOfPeg
+      val future_peg4 = pegs(3) ? RequestModelOfPeg
 
       val peg1 = Await.result(future_peg1, timeout.duration).asInstanceOf[model.Peg]
       val peg2 = Await.result(future_peg2, timeout.duration).asInstanceOf[model.Peg]

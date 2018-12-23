@@ -14,7 +14,7 @@ class Peg(color: model.Color.Value) extends Actor {
   // position is relative to start field of peg
   var position: Option[Int] = None
   override def receive: Receive = {
-    case ReqeuestModelOfPeg =>
+    case RequestModelOfPeg =>
       sender ! model.Peg(color, position)
     case TryMove(steps) =>
       // can move when new_position is different to old one
