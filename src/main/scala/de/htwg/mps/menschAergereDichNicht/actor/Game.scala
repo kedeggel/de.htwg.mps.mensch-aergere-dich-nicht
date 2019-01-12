@@ -26,6 +26,8 @@ final case class RequestMovePeg(player: String, options: Array[Boolean])
 final case class ShowBoard(pegs: Array[Array[model.Peg]])
 final case class ShowBoardWithOptions(pegs: Array[Array[model.Peg]], options:Array[Option[model.Peg]])
 final case class ShowWinScreen(winner: Array[String])
+final case class Handler(game: Game)
+
 // from TUI
 final case class HumanCount(count: Int)
 final case class Rolled(value: Int)
@@ -65,6 +67,7 @@ class Game extends Actor with FSM[State, Data]{
   var views = context.system.actorSelection("/**/View*")
   var min_player = 2
   var max_player = 4
+  var handled = false
 
   /*
   @startuml
@@ -78,12 +81,13 @@ class Game extends Actor with FSM[State, Data]{
   when(New) {
     case Event(NewGame, UninitializedGameData) =>
       log.info("New Game")
-
+      views ! Handler(this)
       // Do feature?
-      views ! RequestHumanCount(1,max_player)
+      views ! RequestHumanCount(min_player,max_player)
       stay
 
     case Event(HumanCount(humans), UninitializedGameData) =>
+      handled = true
       self ! ConstructGame
       stay using ConstructingGame(Some(humans))
 

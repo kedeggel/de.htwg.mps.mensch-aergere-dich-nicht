@@ -1,42 +1,49 @@
 package de.htwg.mps.menschAergereDichNicht.actor
 
+import java.io.BufferedReader
+
 import akka.actor.{Actor, ActorPath, ActorSelection, FSM}
 import akka.event.Logging
 import de.htwg.mps.menschAergereDichNicht.model.{Board, Dice}
 
 import scala.io.StdIn.readLine
+import scala.util.{Failure, Success, Try}
 
 
 // Messages that start with Request are only handled by the view with name ViewMain
 class Tui extends Actor {
   val log = Logging(context.system, this)
+  val input = new BufferedReader(Console.in)
+  var handler: Option[Game] = None
+
   override def receive: Receive = {
+    case Handler(handler) => this.handler = Some(handler)
+
     case RequestHumanCount(min, max) =>
       if(self.path.name == "ViewMain") {
-
-        var valid_input = false
-
-        while (!valid_input) {
-          println( "Please insert number of Human Players [" + min + "-" + max +"]" )
-          try {
-            val humans = scala.io.StdIn.readInt()
-            if (0 < humans && humans < 5) {
+        println("Please insert number of Human Players [" + min + "-" + max +"]")
+        while (!this.handler.get.handled) {
+          if (input.ready()) {
+            val line = input.readLine
+            Try(line.toInt) match {
+            case Success(humans) if min <= humans && humans <= max => {
               sender ! HumanCount(humans)
-              valid_input = true
             }
-          } catch {
-            case e: NumberFormatException =>
-              println("Invalid input please try again...")
+            case _ => {
+              println( "Please insert number of Human Players [" + min + "-" + max +"]")
+            }
           }
+        } else {
+            Thread.sleep(200)
         }
       }
+    }
 
     case ShowBoard(pegs) =>
       println(Board.toString(pegs))
 
     case RequestRollDice(player) =>
       if(self.path.name == "ViewMain") {
-
         var valid_input = false
 
         while (!valid_input) {
