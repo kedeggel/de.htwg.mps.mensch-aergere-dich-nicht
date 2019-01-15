@@ -1,6 +1,5 @@
 package de.htwg.mps.menschAergereDichNicht.model
 
-import scala.util.control.Breaks._
 import scala.collection.mutable.ListBuffer
 
 case object Board {
@@ -13,24 +12,60 @@ case object Board {
   val outFields: Array[Array[OutField]] = generateOutFields()
 
   private val lookupTableFields = Array(
-    (4, 10),  (4, 9), (4, 8), (4, 7), (4, 6), (3, 6), (2, 6), (1, 6), (0, 6),   (0, 5),
-    (0, 4),   (1, 4), (2, 4), (3, 4), (4, 4), (4, 3), (4, 2), (4, 1), (4, 0),   (5, 0),
-    (6, 0),   (6, 1), (6, 2), (6, 3), (6, 4), (7, 4), (8, 4), (9, 4), (10, 4),  (10, 5),
-    (10, 6),  (9, 6), (8, 6), (7, 6), (6, 6), (6, 7), (6, 8), (6, 9), (6, 10),  (5, 10),
+    (4, 10),
+    (4, 9),
+    (4, 8),
+    (4, 7),
+    (4, 6),
+    (3, 6),
+    (2, 6),
+    (1, 6),
+    (0, 6),
+    (0, 5),
+    (0, 4),
+    (1, 4),
+    (2, 4),
+    (3, 4),
+    (4, 4),
+    (4, 3),
+    (4, 2),
+    (4, 1),
+    (4, 0),
+    (5, 0),
+    (6, 0),
+    (6, 1),
+    (6, 2),
+    (6, 3),
+    (6, 4),
+    (7, 4),
+    (8, 4),
+    (9, 4),
+    (10, 4),
+    (10, 5),
+    (10, 6),
+    (9, 6),
+    (8, 6),
+    (7, 6),
+    (6, 6),
+    (6, 7),
+    (6, 8),
+    (6, 9),
+    (6, 10),
+    (5, 10),
   )
 
   private val lookupTableHomeFields = Array(
-    Array((5,9),(5,8),(5,7),(5,6)),
-    Array((1,5),(2,5),(3,5),(4,5)),
-    Array((5,1),(5,2),(5,3),(5,4)),
-    Array((6,5),(7,5),(8,5),(9,5))
+    Array((5, 9), (5, 8), (5, 7), (5, 6)),
+    Array((1, 5), (2, 5), (3, 5), (4, 5)),
+    Array((5, 1), (5, 2), (5, 3), (5, 4)),
+    Array((6, 5), (7, 5), (8, 5), (9, 5))
   )
 
   private val lookupTableOutFields = Array(
-    Array((0,9),(0,10),(1,9),(1,10)), // down left
-    Array((0,0),(0,1),(1,0),(1,1)),   // up left
-    Array((9,0),(9,1),(10,0),(10,1)), // up right
-    Array((9,9),(9,10),(10,9),(10,10))// down right
+    Array((0, 9), (0, 10), (1, 9), (1, 10)), // down left
+    Array((0, 0), (0, 1), (1, 0), (1, 1)), // up left
+    Array((9, 0), (9, 1), (10, 0), (10, 1)), // up right
+    Array((9, 9), (9, 10), (10, 9), (10, 10)) // down right
   )
 
   private def generateFields(): Array[Field] = {
@@ -68,67 +103,87 @@ case object Board {
   def lookupField(field: Field): (Int, Int) = {
     field match {
       case f: NormalField => lookupTableFields(f.id)
-      case f: StartField => lookupTableFields(f.id)
-      case f: OutField => lookupTableOutFields(f.color.toInt())(f.id)
-      case f: HomeField => lookupTableHomeFields(f.color.toInt())(f.id)
-      case _ => (3, 3)
+      case f: StartField  => lookupTableFields(f.id)
+      case f: OutField    => lookupTableOutFields(f.color.toInt())(f.id)
+      case f: HomeField   => lookupTableHomeFields(f.color.toInt())(f.id)
+      case _              => (3, 3)
     }
+  }
+
+  def lookupField(i: Int, j: Int): Option[(Field, Int)] = {
+    for ((f, idx) <- lookupTableFields.zipWithIndex) {
+      if (f == (i, j)) return Some(fields(idx), idx)
+    }
+    for {
+      (row, idx) <- lookupTableHomeFields.zipWithIndex
+      (f, innerIdx) <- row.zipWithIndex
+    } {
+      if (f == (i, j)) return Some(homeFields(idx)(innerIdx), innerIdx)
+    }
+    for {
+      (row, idx) <- lookupTableOutFields.zipWithIndex
+      (f, innerIdx) <- row.zipWithIndex
+    } {
+      if (f == (i, j)) return Some(outFields(idx)(innerIdx), innerIdx)
+    }
+
+    None
   }
 
   def toString(players: Array[Array[Peg]]): String = {
-    toStringMove(players, Array(None,None,None,None))
+    toStringMove(players, Array(None, None, None, None))
   }
 
-  def toStringMove(players: Array[Array[Peg]], options: Array[Option[Peg]]): String = {
+  def toStringMove(players: Array[Array[Peg]],
+                   options: Array[Option[Peg]]): String = {
     // create array for text representation
-    var fieldChars = Array.fill(11)(Array.fill(21)(" "))
+    val fieldChars = Array.fill(11)(Array.fill(21)(" "))
 
     // add normal and start fields
-    for ( field <- fields ) {
-      var (x, y) = lookupField(field)
-      fieldChars(y)(x*2) = field.toString(None)
+    for (field <- fields) {
+      val (x, y) = lookupField(field)
+      fieldChars(y)(x * 2) = field.toString(None)
     }
 
     // add home fields
-    for ( colors <- homeFields ) {
-      for ( field <- colors) {
-        var (x, y) = lookupField(field)
-        fieldChars(y)(x*2) = field.toString(None)
+    for (colors <- homeFields) {
+      for (field <- colors) {
+        val (x, y) = lookupField(field)
+        fieldChars(y)(x * 2) = field.toString(None)
       }
     }
 
     // add out fields
-    for ( colors <- outFields ) {
-      for ( field <- colors) {
-        var (x, y) = lookupField(field)
-        fieldChars(y)(x*2) = field.toString(None)
+    for (colors <- outFields) {
+      for (field <- colors) {
+        val (x, y) = lookupField(field)
+        fieldChars(y)(x * 2) = field.toString(None)
       }
     }
 
     // add pegs
     for (pegs <- players) {
-      var move_out = false
-      var outs = 0;
+      var outs = 0
       for (peg <- pegs) {
         if (peg.relativ_position().isDefined) {
-          var rel = peg.relativ_position().get
+          val rel = peg.relativ_position().get
           //draw on board
           if (39 < rel) {
             //home row
-            var home_id = rel - 40
-            var home_field = homeFields(peg.color.toInt())(home_id)
-            var (x, y) = lookupField(home_field)
-            fieldChars(y)(x*2) = home_field.toString(Some(peg))
+            val home_id = rel - 40
+            val home_field = homeFields(peg.color.toInt())(home_id)
+            val (x, y) = lookupField(home_field)
+            fieldChars(y)(x * 2) = home_field.toString(Some(peg))
           } else {
-            var field = fields(peg.absolute_position().get)
-            var (x, y) = lookupField(field)
-            fieldChars(y)(x*2) = field.toString(Some(peg))
+            val field = fields(peg.absolute_position().get)
+            val (x, y) = lookupField(field)
+            fieldChars(y)(x * 2) = field.toString(Some(peg))
           }
         } else {
           //draw on out field
-          var out_field = outFields(peg.color.toInt())(outs)
-          var (x, y) = lookupField(out_field)
-          fieldChars(y)(x*2) = out_field.toString(Some(peg))
+          val out_field = outFields(peg.color.toInt())(outs)
+          val (x, y) = lookupField(out_field)
+          fieldChars(y)(x * 2) = out_field.toString(Some(peg))
           outs += 1
         }
       }
@@ -146,21 +201,21 @@ case object Board {
               var home_id = rel - 40
               var home_field = homeFields(peg.color.toInt())(home_id)
               var (x, y) = lookupField(home_field)
-              fieldChars(y)(x*2) = (i+1).toString
+              fieldChars(y)(x * 2) = (i + 1).toString
             } else {
               var field = fields(peg.absolute_position().get)
               var (x, y) = lookupField(field)
-              fieldChars(y)(x*2) = (i+1).toString
+              fieldChars(y)(x * 2) = (i + 1).toString
             }
           } else {
             //draw on out field
             var out_field = outFields(peg.color.toInt())(outs)
             var (x, y) = lookupField(out_field)
-            fieldChars(y)(x*2) = (i+1).toString
+            fieldChars(y)(x * 2) = (i + 1).toString
             outs += 1
           }
         case None =>
-          //Do nothing
+        //Do nothing
       }
     }
 

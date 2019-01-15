@@ -7,12 +7,12 @@ class DiceSpec extends WordSpec with Matchers {
     val dice = Dice
 
     "not be higher than 6" in {
-      val scores = List.fill(100)(dice.role())
+      val scores = List.fill(100)(dice.roll())
       scores.count(_ > 6) should be(0)
     }
 
     "not be less that 1" in {
-      val scores = List.fill(100)(dice.role())
+      val scores = List.fill(100)(dice.roll())
       scores.count(_ < 0) should be(0)
     }
   }

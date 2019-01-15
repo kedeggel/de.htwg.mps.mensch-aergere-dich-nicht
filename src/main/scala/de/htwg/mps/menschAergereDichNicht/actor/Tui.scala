@@ -2,13 +2,11 @@ package de.htwg.mps.menschAergereDichNicht.actor
 
 import java.io.BufferedReader
 
-import akka.actor.{Actor, ActorPath, ActorSelection, FSM}
+import akka.actor.Actor
 import akka.event.Logging
 import de.htwg.mps.menschAergereDichNicht.model.{Board, Dice}
 
-import scala.io.StdIn.readLine
-import scala.util.{Failure, Success, Try}
-
+import scala.util.{Success, Try}
 
 // Messages that start with Request are only handled by the view with name ViewMain
 class Tui extends Actor {
@@ -17,56 +15,43 @@ class Tui extends Actor {
   var handler: Option[Game] = None
 
   override def receive: Receive = {
-    case Handler(handler) => this.handler = Some(handler)
+    case Handler(h) => this.handler = Some(h)
 
     case RequestHumanCount(min, max) =>
-      if(self.path.name == "ViewMain") {
-        println("Please insert number of Human Players [" + min + "-" + max +"]")
+      if (self.path.name == "ViewMain") {
+        println(
+          "Please insert number of Human Players [" + min + "-" + max + "]"
+        )
         while (!this.handler.get.handled) {
           if (input.ready()) {
             val line = input.readLine
             Try(line.toInt) match {
-            case Success(humans) if min <= humans && humans <= max => {
-              sender ! HumanCount(humans)
-            }
-            case _ => {
-              println( "Please insert number of Human Players [" + min + "-" + max +"]")
+              case Success(humans) if min <= humans && humans <= max =>
+                sender ! HumanCount(humans)
+              case _ =>
+                println(
+                  "Please insert number of Human Players [" + min + "-" + max + "]")
             }
           }
-        } else {
-            Thread.sleep(200)
         }
       }
-    }
 
     case ShowBoard(pegs) =>
       println(Board.toString(pegs))
 
     case RequestRollDice(player) =>
-      if(self.path.name == "ViewMain") {
-        var valid_input = false
-
-        while (!valid_input) {
-          println("Turn for " + player + " press 'd' to roll the dice")
-          val input = scala.io.StdIn.readLine()
-
-          try {
-            val roll = input.toInt
-            sender ! Rolled(roll)
-            valid_input = true
-          } catch {
-            case e: Exception =>
-          }
-
-          if (!valid_input) {
-            input match {
+      if (self.path.name == "ViewMain") {
+        println("Turn for " + player + " press 'd' to roll the dice")
+        while (!this.handler.get.handled) {
+          if (input.ready()) {
+            val line = input.readLine
+            line match {
               case "d" =>
-                sender ! Rolled(Dice.role())
-                valid_input = true
-
+                sender ! Rolled(Dice.roll())
               case "q" =>
                 sender ! QuitGame
-                valid_input = true
+              case "n" =>
+                sender ! NewGame
               case _ =>
                 println("Invalid input try again...")
             }
@@ -82,12 +67,12 @@ class Tui extends Actor {
 
     case ShowWinScreen(winner) =>
       for ((winner, i) <- winner.zipWithIndex) {
-        println((i+1) + ". place is " + winner)
+        println((i + 1) + ". place is " + winner)
       }
       sender ! ShowedWinScreen
 
     case RequestMovePeg(player, options) =>
-      if(self.path.name == "ViewMain") {
+      if (self.path.name == "ViewMain") {
         println(player + "'s turn please select what to do")
 
         var option_string = ""
@@ -95,33 +80,36 @@ class Tui extends Actor {
         for ((movable, i) <- options.zipWithIndex) {
           if (movable) {
             can_choose = true
-            option_string +=  (i+1) + " "
+            option_string += (i + 1) + " "
           }
         }
+        if (can_choose) {
+          println(
+            "Please select one of the following numbers: " + option_string
+          )
+          var break = false
+          while (!this.handler.get.handled && !break) {
 
-        var valid_input = false
+            if (input.ready()) {
 
-        while (!valid_input) {
-          if (can_choose) {
-            try {
-              println("Please select one of the following numbers: " + option_string)
-              val selected_peg = scala.io.StdIn.readInt()
-              if (1 <= selected_peg && selected_peg < 5 && options(selected_peg - 1)) {
-                sender ! ExecuteMove(Some(selected_peg))
-                valid_input = true
-              } else {
-                println("Invalid input try again...")
+              val line = input.readLine
+              Try(line.toInt) match {
+                case Success(selected_peg) if 1 <= selected_peg && selected_peg < 5 && options(selected_peg - 1) =>
+                  sender ! ExecuteMove(Some(selected_peg))
+                  break = true
+                case _ =>
+                  println("Invalid input try again...")
+                  println(
+                    "Please select one of the following numbers: " + option_string
+                  )
               }
-            } catch {
-              case e: NumberFormatException =>
-                println("Invalid input try again...")
+            } else {
+              Thread.sleep(10)
             }
-          } else {
-            println("Can't move any peg, press enter to end turn")
-            scala.io.StdIn.readLine()
-            sender ! ExecuteMove(None)
-            valid_input = true
           }
+        } else {
+          println("Can't move any peg. Your turn ends.")
+          sender ! ExecuteMove(None)
         }
       }
 

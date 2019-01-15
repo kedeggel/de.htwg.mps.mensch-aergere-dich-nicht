@@ -1,6 +1,6 @@
 package de.htwg.mps.menschAergereDichNicht.actor
 
-import akka.actor.{Actor, ActorPath, ActorSelection, FSM, Props}
+import akka.actor.{Actor, ActorPath, ActorRef, ActorSelection, FSM, Props}
 import akka.util.Timeout
 
 import scala.concurrent.duration._
@@ -13,6 +13,7 @@ import scala.concurrent.Await
 
 // starts actor system game in main
 final case object NewGame
+final case object Restart
 
 // from/to Game
 final case object ConstructGame
@@ -68,6 +69,7 @@ class Game extends Actor with FSM[State, Data]{
   var min_player = 2
   var max_player = 4
   var handled = false
+  var restart = false
 
   /*
   @startuml
@@ -79,7 +81,17 @@ class Game extends Actor with FSM[State, Data]{
   @enduml
    */
   when(New) {
+    case Event(Restart, UninitializedGameData) =>
+      handled = true
+      restart = true
+      context.children.foreach(context.stop(_))
+      Thread.sleep(50)
+      self ! NewGame
+      stay
+
     case Event(NewGame, UninitializedGameData) =>
+      handled = false
+      restart = false
       log.info("New Game")
       views ! Handler(this)
       // Do feature?
@@ -119,6 +131,7 @@ class Game extends Actor with FSM[State, Data]{
   when(RollDice) {
     case Event(RequestRollDice, GameData(current_player, player_count, _, _)) =>
       views ! ShowBoard(get_pegs_of_players(player_count))
+      handled = false
       views ! RequestRollDice("Player" + current_player)
       goto(SelectMove)
   }
@@ -134,7 +147,7 @@ class Game extends Actor with FSM[State, Data]{
   when(SelectMove) {
     case Event(Rolled(value), GameData(current_player, player_count, roll, winner)) =>
       implicit val timeout = Timeout(1 seconds)
-
+      handled = true
       // test move options relative to peg
       val future = context.actorSelection("Player" + current_player) ? TryMove(value)
 
@@ -179,14 +192,15 @@ class Game extends Actor with FSM[State, Data]{
           buf += None
         }
       }
-
+      Thread.sleep(50)
+      handled = false
       views ! ShowBoardWithOptions(pegs, buf.toArray)
       views ! RequestMovePeg("Player" + current_player, updated_movable.toArray)
       stay using GameData(current_player, player_count, Some(value), winner)
 
     case Event(ExecuteMove(move), GameData(current_player, player_count, roll, _)) =>
       implicit val timeout = Timeout(1 seconds)
-
+      handled = true
       (move, roll) match {
         case (Some(move), Some(roll)) =>
           val peg_to_move = context.actorSelection("Player" + current_player + "/Peg" + move)
@@ -244,7 +258,7 @@ class Game extends Actor with FSM[State, Data]{
       views ! EndGame
       stay
     case Event(QuitGame, _) =>
-      context.system.terminate()
+      System.exit(0)
       stay
     case _ =>
       stay
@@ -253,8 +267,11 @@ class Game extends Actor with FSM[State, Data]{
   whenUnhandled {
     case Event(QuitGame, s) =>
       log.warning("Default handler: Quiting Game")
-      context.system.terminate()
+      System.exit(0)
       stay
+    case Event(NewGame, _) =>
+      self ! Restart
+      goto(New) using UninitializedGameData
     case Event(e, s) =>
       log.warning("received unhandled request {} in state {}/{}", e, stateName, s)
       stay

@@ -1,5 +1,4 @@
 package de.htwg.mps.menschAergereDichNicht.model
-import de.htwg.mps.menschAergereDichNicht.model
 
 object Color extends Enumeration {
   type EnumType = Value
@@ -20,6 +19,7 @@ object Color extends Enumeration {
       case Green => "g"
       case Red => "r"
     }
+
   }
 
 }

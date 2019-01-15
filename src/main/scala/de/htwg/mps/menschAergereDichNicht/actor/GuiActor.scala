@@ -3,13 +3,11 @@ import akka.actor.Actor
 import akka.event.Logging
 import de.htwg.mps.menschAergereDichNicht.aview.Gui
 
-
-
 class GuiActor extends Actor {
   var handler: Option[Game] = None
+  private var lastSender = sender
 
-  def newGame: Unit = {
-    println("Sending new game")
+  def newGame = {
     sender ! NewGame
   }
 
@@ -17,22 +15,30 @@ class GuiActor extends Actor {
   val gui = new Gui(this)
 
   override def receive: Receive = {
-    case Handler(handler) => this.handler = Some(handler)
+    case Handler(h) =>
+      this.handler = Some(h)
 
-    case RequestHumanCount(min, max) => {
+    case RequestHumanCount(min, max) =>
       val nPlayers = gui.numberOfPlayer(min, max)
       if (nPlayers != -1) sender ! HumanCount(nPlayers)
-    }
-    case ShowBoard(pegs) => {
-      print("GUI: ShowBoard")
-    }
-    case RequestRollDice(player) => {
-      println("GUI: RequestRollDice")
-    }
-    case Rolled(value) => {}
-    case ShowBoardWithOptions(pegs, options) => {}
-    case ShowWinScreen(winner) => {}
-    case RequestMovePeg(player, options) => {}
-    case EndGame => {}
+    case ShowBoard(pegs) =>
+      gui.updatePegs(pegs)
+    case RequestRollDice(player) =>
+      gui.setCurrentPlayer(player)
+      val diceResult = gui.rollDice
+      if (diceResult != -1) sender ! Rolled(diceResult)
+    case Rolled(value) =>
+      gui.lastDice = value
+      gui.update
+    case ShowBoardWithOptions(pegs, options) =>
+      gui.highlight(options)
+
+    case ShowWinScreen(winner) =>
+    case RequestMovePeg(player, options) =>
+      lastSender = sender
+      gui makePegsMovable ((x: Option[Int]) => send(x))
+    case EndGame =>
   }
+
+  def send(x: Option[Int]): Unit = lastSender ! ExecuteMove(x)
 }

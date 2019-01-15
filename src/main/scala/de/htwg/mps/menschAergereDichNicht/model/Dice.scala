@@ -3,9 +3,9 @@ package de.htwg.mps.menschAergereDichNicht.model
 import scala.util.Random
 
 object Dice {
-  val random = Random
+  private val random = Random
 
-  def role(): Int = {
+  def roll(): Int = {
     random.nextInt(6) + 1
   }
 }
