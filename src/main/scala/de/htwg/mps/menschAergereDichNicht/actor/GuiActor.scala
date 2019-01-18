@@ -28,16 +28,16 @@ class GuiActor extends Actor {
       val diceResult = gui.rollDice
       if (diceResult != -1) sender ! Rolled(diceResult)
     case Rolled(value) =>
-      gui.lastDice = value
-      gui.update
+      gui.updateDice(value)
     case ShowBoardWithOptions(pegs, options) =>
       gui.highlight(options)
-
     case ShowWinScreen(winner) =>
+      gui.showWinScreen(winner)
     case RequestMovePeg(player, options) =>
       lastSender = sender
       gui makePegsMovable ((x: Option[Int]) => send(x))
     case EndGame =>
+      gui.showEndGame()
   }
 
   def send(x: Option[Int]): Unit = lastSender ! ExecuteMove(x)

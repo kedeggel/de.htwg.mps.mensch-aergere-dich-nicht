@@ -201,6 +201,7 @@ class Game extends Actor with FSM[State, Data]{
     case Event(ExecuteMove(move), GameData(current_player, player_count, roll, _)) =>
       implicit val timeout = Timeout(1 seconds)
       handled = true
+      Thread.sleep(20)
       (move, roll) match {
         case (Some(move), Some(roll)) =>
           val peg_to_move = context.actorSelection("Player" + current_player + "/Peg" + move)

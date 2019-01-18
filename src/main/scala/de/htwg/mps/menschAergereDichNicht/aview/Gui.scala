@@ -218,8 +218,9 @@ class Gui(actor: GuiActor) extends Frame {
     lastDice
   }
 
-  def update() = {
-    repaint()
+  def updateDice(value: Int) = {
+    lastDice = value
+    diceButton.setDots(lastDice)
   }
 
   def setCurrentPlayer(player: String) = {
@@ -348,6 +349,9 @@ class Gui(actor: GuiActor) extends Frame {
     }
     componentMatrix
   }
+
+  def showWinScreen(winner: Array[String]): Unit = {}
+  def showEndGame(): Unit = {}
 
   def transformColor(
     color: de.htwg.mps.menschAergereDichNicht.model.Color.Value

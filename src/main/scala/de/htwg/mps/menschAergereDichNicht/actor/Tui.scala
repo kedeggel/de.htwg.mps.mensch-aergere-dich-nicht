@@ -89,7 +89,6 @@ class Tui extends Actor {
           )
           var break = false
           while (!this.handler.get.handled && !break) {
-
             if (input.ready()) {
 
               val line = input.readLine
