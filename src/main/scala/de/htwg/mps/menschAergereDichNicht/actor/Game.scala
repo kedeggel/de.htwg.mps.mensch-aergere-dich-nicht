@@ -60,7 +60,7 @@ case object Finish extends State
 sealed trait Data
 case object UninitializedGameData extends Data
 case class ConstructingGame(humans: Option[Int]) extends Data
-case class GameData(current_player: Int, player_count: Int, roll: Option[Int], winner_list: Array[String]) extends Data
+case class GameData(current_player: Int, player_count: Int, roll: Option[Int], tries: Int, winner_list: Array[String]) extends Data
 
 class Game extends Actor with FSM[State, Data]{
   startWith(New, UninitializedGameData)
@@ -114,7 +114,7 @@ class Game extends Actor with FSM[State, Data]{
         context.actorOf(Props(classOf[Player], color), "Player" + human_number)
       }
 
-      val data = GameData(1, humans, None, Array())
+      val data = GameData(1, humans, None, 0, Array())
       log.info("Created new game {}", data)
       self ! RequestRollDice
       goto(RollDice) using data
@@ -129,11 +129,13 @@ class Game extends Actor with FSM[State, Data]{
   @enduml
    */
   when(RollDice) {
-    case Event(RequestRollDice, GameData(current_player, player_count, _, _)) =>
-      views ! ShowBoard(get_pegs_of_players(player_count))
+    case Event(RequestRollDice, GameData(current_player, player_count, roll, tries, winner_list)) =>
+      if (tries == 0) {
+        views ! ShowBoard(get_pegs_of_players(player_count))
+      }
       handled = false
       views ! RequestRollDice("Player" + current_player)
-      goto(SelectMove)
+      goto(SelectMove) using GameData(current_player, player_count, roll, tries + 1, winner_list)
   }
 
   /*
@@ -145,7 +147,7 @@ class Game extends Actor with FSM[State, Data]{
   @enduml
    */
   when(SelectMove) {
-    case Event(Rolled(value), GameData(current_player, player_count, roll, winner)) =>
+    case Event(Rolled(value), GameData(current_player, player_count, roll, tries, winner)) =>
       implicit val timeout = Timeout(1 seconds)
       handled = true
       // test move options relative to peg
@@ -177,7 +179,6 @@ class Game extends Actor with FSM[State, Data]{
             if(peg.field_id == target_position.field_id) {
               allowd_by_game = false
             }
-            // TODO: check if we rolled 6, start field is empty and we have a peg out
           }
         }
         updated_movable += can_move && allowd_by_game
@@ -192,13 +193,29 @@ class Game extends Actor with FSM[State, Data]{
           buf += None
         }
       }
+
       Thread.sleep(50)
       handled = false
-      views ! ShowBoardWithOptions(pegs, buf.toArray)
-      views ! RequestMovePeg("Player" + current_player, updated_movable.toArray)
-      stay using GameData(current_player, player_count, Some(value), winner)
 
-    case Event(ExecuteMove(move), GameData(current_player, player_count, roll, _)) =>
+      // check if we couldn't move and can roll again
+      var in_home = 0
+      if (model_pegs.filter(_.relativ_position() == Some(43)).length != 0) {
+        in_home += 1
+
+      }
+      var out = model_pegs.filter(_.relativ_position() == None).length
+
+      if (4-in_home == out && tries != 3 && updated_movable.filter(_ == true).length == 0) {
+        self ! RequestRollDice
+        goto(RollDice) using GameData(current_player, player_count, roll, tries, winner)
+      } else {
+        views ! ShowBoardWithOptions(pegs, buf.toArray)
+        views ! RequestMovePeg("Player" + current_player, updated_movable.toArray)
+        stay using GameData(current_player, player_count, Some(value), tries, winner)
+      }
+
+
+    case Event(ExecuteMove(move), GameData(current_player, player_count, roll, _, _)) =>
       implicit val timeout = Timeout(1 seconds)
       handled = true
       Thread.sleep(20)
@@ -212,12 +229,13 @@ class Game extends Actor with FSM[State, Data]{
 
       stay
 
-    case Event(PlayerFinished, GameData(current_player, player_count, roll, winner_list)) =>
+    case Event(PlayerFinished, GameData(current_player, player_count, roll, tries, winner_list)) =>
       var arr = winner_list
       arr :+= sender.path.name
-      stay using GameData(current_player, player_count, roll, arr)
+      stay using GameData(current_player, player_count, roll, tries, arr)
 
-    case Event(PrepareNextTurn, GameData(current_player, player_count, roll, winner)) =>
+    case Event(PrepareNextTurn, GameData(current_player, player_count, roll, tries, winner)) =>
+
       implicit val timeout = Timeout(1 seconds)
 
       var next_player = current_player + 1
@@ -250,7 +268,7 @@ class Game extends Actor with FSM[State, Data]{
         goto(Finish) using UninitializedGameData
       } else {
         self ! RequestRollDice
-        goto(RollDice) using GameData(next_player, player_count, None, winner)
+        goto(RollDice) using GameData(next_player, player_count, None, 0, winner)
       }
   }
 
