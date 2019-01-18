@@ -116,8 +116,11 @@ class DiceButton(var dots: Int) extends Button {
 
   def setDots(dots: Int): Unit = {
     this.dots = dots
+    if (6 < dots) {
+      this.dots = 1
+    }
 
-    val imageScaled = dicesImages(dots - 1) getScaledInstance (80, 80, Image.SCALE_REPLICATE)
+    val imageScaled = dicesImages(this.dots - 1) getScaledInstance (80, 80, Image.SCALE_REPLICATE)
     preferredSize = new Dimension(80, 80)
     minimumSize = new Dimension(80, 80)
     maximumSize = new Dimension(80, 80)

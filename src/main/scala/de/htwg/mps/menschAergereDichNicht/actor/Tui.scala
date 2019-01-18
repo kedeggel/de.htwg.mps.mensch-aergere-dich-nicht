@@ -45,15 +45,27 @@ class Tui extends Actor {
         while (!this.handler.get.handled) {
           if (input.ready()) {
             val line = input.readLine
-            line match {
-              case "d" =>
-                sender ! Rolled(Dice.roll())
-              case "q" =>
-                sender ! QuitGame
-              case "n" =>
-                sender ! NewGame
-              case _ =>
-                println("Invalid input try again...")
+            var cheating = false
+
+            try {
+              val roll = line.toInt
+              sender ! Rolled(roll)
+              cheating = true
+            } catch {
+              case e: Exception =>
+            }
+
+            if (!cheating) {
+              line match {
+                case "d" =>
+                  sender ! Rolled(Dice.roll())
+                case "q" =>
+                  sender ! QuitGame
+                case "n" =>
+                  sender ! NewGame
+                case _ =>
+                  println("Invalid input try again...")
+              }
             }
           }
         }
