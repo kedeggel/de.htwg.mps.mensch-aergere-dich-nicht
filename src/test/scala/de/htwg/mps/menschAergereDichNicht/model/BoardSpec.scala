@@ -26,7 +26,7 @@ class BoardSpec extends WordSpec with Matchers {
     }
 
     "be displayed as expected" in {
-      Board.toString should be(
+      Board.toString(Array()) should be(
         "" +
           "o o     o o s     o o\n" +
           "o o     o h o     o o\n" +
@@ -38,7 +38,7 @@ class BoardSpec extends WordSpec with Matchers {
           "        o h o        \n" +
           "        o h o        \n" +
           "o o     o h o     o o\n" +
-          "o o     s o o     o o"
+          "o o     s o o     o o\n"
       )
     }
   }
