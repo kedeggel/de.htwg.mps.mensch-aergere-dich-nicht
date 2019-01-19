@@ -23,9 +23,9 @@ class GuiActor extends Actor {
       if (nPlayers != -1) sender ! HumanCount(nPlayers)
     case ShowBoard(pegs) =>
       gui.updatePegs(pegs)
-    case RequestRollDice(player) =>
+    case RequestRollDice(dice, player) =>
       gui.setCurrentPlayer(player)
-      val diceResult = gui.rollDice
+      val diceResult = gui.rollDice(dice)
       if (diceResult != -1) sender ! Rolled(diceResult)
     case Rolled(value) =>
       gui.updateDice(value)

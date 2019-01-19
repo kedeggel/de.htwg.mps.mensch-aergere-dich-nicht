@@ -4,7 +4,7 @@ import java.io.BufferedReader
 
 import akka.actor.Actor
 import akka.event.Logging
-import de.htwg.mps.menschAergereDichNicht.model.{Board, Dice}
+import de.htwg.mps.menschAergereDichNicht.model.Board
 
 import scala.util.{Success, Try}
 
@@ -39,7 +39,7 @@ class Tui extends Actor {
     case ShowBoard(pegs) =>
       println(Board.toString(pegs))
 
-    case RequestRollDice(player) =>
+    case RequestRollDice(dice, player) =>
       if (self.path.name == "ViewMain") {
         println("Turn for " + player + " press 'd' to roll the dice")
         while (!this.handler.get.handled) {
@@ -58,7 +58,7 @@ class Tui extends Actor {
             if (!cheating) {
               line match {
                 case "d" =>
-                  sender ! Rolled(Dice.roll())
+                  sender ! Rolled(dice.roll())
                 case "q" =>
                   sender ! QuitGame
                 case "n" =>

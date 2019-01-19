@@ -5,7 +5,7 @@ import akka.util.Timeout
 
 import scala.concurrent.duration._
 import akka.pattern.ask
-import de.htwg.mps.menschAergereDichNicht.model.{Board, Color}
+import de.htwg.mps.menschAergereDichNicht.model.{Board, Color, DiceInterface}
 import de.htwg.mps.menschAergereDichNicht.model
 
 import scala.collection.mutable.ListBuffer
@@ -22,7 +22,7 @@ final case object EndGame
 
 // to TUI
 final case class RequestHumanCount(min: Int, max: Int)
-final case class RequestRollDice(player: String)
+final case class RequestRollDice(dice: DiceInterface, player: String)
 final case class RequestMovePeg(player: String, options: Array[Boolean])
 final case class ShowBoard(pegs: Array[Array[model.Peg]])
 final case class ShowBoardWithOptions(pegs: Array[Array[model.Peg]], options:Array[Option[model.Peg]])
@@ -62,7 +62,7 @@ case object UninitializedGameData extends Data
 case class ConstructingGame(humans: Option[Int]) extends Data
 case class GameData(current_player: Int, player_count: Int, roll: Option[Int], tries: Int, winner_list: Array[String]) extends Data
 
-class Game extends Actor with FSM[State, Data]{
+class Game(dice: DiceInterface) extends Actor with FSM[State, Data]{
   startWith(New, UninitializedGameData)
   // how to handle multiple views simultaneously?
   var views = context.system.actorSelection("/**/View*")
@@ -134,7 +134,7 @@ class Game extends Actor with FSM[State, Data]{
         views ! ShowBoard(get_pegs_of_players(player_count))
       }
       handled = false
-      views ! RequestRollDice("Player" + current_player)
+      views ! RequestRollDice(dice, "Player" + current_player)
       goto(SelectMove) using GameData(current_player, player_count, roll, tries + 1, winner_list)
   }
 

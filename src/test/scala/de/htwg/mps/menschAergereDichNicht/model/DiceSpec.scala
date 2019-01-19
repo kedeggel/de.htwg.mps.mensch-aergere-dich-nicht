@@ -1,10 +1,11 @@
 package de.htwg.mps.menschAergereDichNicht.model
 
+import de.htwg.mps.menschAergereDichNicht.model.diceBaseImpl.Dice
 import org.scalatest.{Matchers, WordSpec}
 
 class DiceSpec extends WordSpec with Matchers {
   "A dice" should {
-    val dice = Dice
+    val dice = new Dice
 
     "not be higher than 6" in {
       val scores = List.fill(100)(dice.roll())

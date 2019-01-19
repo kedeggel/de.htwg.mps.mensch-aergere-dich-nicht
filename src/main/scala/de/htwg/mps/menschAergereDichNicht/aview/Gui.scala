@@ -11,25 +11,8 @@ import javax.swing.ImageIcon
 import javax.swing.border.EmptyBorder
 
 import scala.swing.event.{ButtonClicked, Key}
-import scala.swing.{
-  Action,
-  BoxPanel,
-  Button,
-  Color,
-  Component,
-  Dialog,
-  Dimension,
-  Frame,
-  Graphics2D,
-  GridPanel,
-  Label,
-  Menu,
-  MenuBar,
-  MenuItem,
-  Orientation,
-  Panel
-}
-import scala.util.{Success, Try}
+import scala.swing.{Action, BoxPanel, Button, Color, Component, Dialog, Dimension, Frame, Graphics2D, GridPanel, Label, Menu, MenuBar, MenuItem, Orientation, Panel}
+import scala.util.{Random, Success, Try}
 
 case class RoundButton(color: Color, var peg: Option[Peg] = None)
     extends Button {
@@ -202,22 +185,24 @@ class Gui(actor: GuiActor) extends Frame {
     }
   }
 
-  def rollDice(): Int = {
+  def rollDice(dice: DiceInterface): Int = {
     diceRequested = true
     while (!diceRolled && !actor.handler.get.handled) {
       Thread.sleep(10)
     }
     if (actor.handler.get.restart) return -1
     val rem = actor.handler.get.handled
-    for (_ <- 1 to 40) {
-      lastDice = Dice.roll()
-      Thread.sleep(15)
-      diceButton.setDots(lastDice)
-    }
+    if (rem) return -1
 
+    lastDice = dice.roll()
+    for (_ <- 1 to 40) {
+      val animatedDice = Random.nextInt(6) + 1
+      Thread.sleep(15)
+      diceButton.setDots(animatedDice)
+    }
+    diceButton.setDots(lastDice)
     diceRolled = false
     diceRequested = false
-    if (rem) return -1
     lastDice
   }
 
