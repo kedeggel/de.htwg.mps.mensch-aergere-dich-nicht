@@ -268,7 +268,11 @@ class Game extends Actor with FSM[State, Data]{
         goto(Finish) using UninitializedGameData
       } else {
         self ! RequestRollDice
-        goto(RollDice) using GameData(next_player, player_count, None, 0, winner)
+        if (!finished && roll == Some(6)) {
+          goto(RollDice) using GameData(current_player, player_count, None, 0, winner)
+        } else {
+          goto(RollDice) using GameData(next_player, player_count, None, 0, winner)
+        }
       }
   }
 
